@@ -1,0 +1,73 @@
+version: "3.7"
+services:
+    app_casa_arari:
+        build:
+            args:
+                user: luanramos
+                uid: 1000
+            context: ./
+            dockerfile: Dockerfile
+        image: laravel-app
+        restart: unless-stopped
+        working_dir: /var/www/
+        ports:
+            - 9012:9000
+        environment:
+            PHP_IDE_CONFIG: "serverName=ace3"
+        extra_hosts:
+            - "host.docker.internal:host-gateway"
+        volumes:
+            - ./:/var/www
+            - ./docker/php/conf.d/xdebug.ini:/usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
+            - ./docker/php/conf.d/error_reporting.ini:/usr/local/etc/php/conf.d/error_reporting.ini
+        depends_on:
+            - redis_casa_arari
+        networks:
+            - casa_arari_network
+
+    npm:
+        image: node:current-alpine
+        volumes:
+            - ./:/var/www/
+        entrypoint: ["npm"]
+        working_dir: /var/www/
+        networks:
+            - casa_arari_network
+
+    nginx:
+        image: nginx:alpine
+        restart: unless-stopped
+        ports:
+            - 8050:80
+            - 448:443
+        volumes:
+            - ./:/var/www
+            - ./docker/nginx/:/etc/nginx/conf.d/
+        networks:
+            - casa_arari_network
+
+    db_casa_arari:
+        image: mysql
+        #        platform: linux/arm64/v8
+        restart: unless-stopped
+        expose:
+            - 3308
+        environment:
+            MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+            MYSQL_DATABASE: ${DB_DATABASE}
+        volumes:
+            - /var/lib/mysql
+        ports:
+            - 3320:3308
+            - 3330:3308
+        networks:
+            - casa_arari_network
+
+    redis_casa_arari:
+        image: redis:latest
+        networks:
+            - casa_arari_network
+
+networks:
+    casa_arari_network:
+        driver: bridge

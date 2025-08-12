@@ -1,0 +1,20 @@
+# This is a sample build configuration for PHP.
+# Check our guides at https://confluence.atlassian.com/x/e8YWN for more examples.
+# Only use spaces to indent your .yml configuration.
+# -----
+# You can specify a custom docker image from Docker Hub as your build environment.
+image: php:8.2
+
+# Doing a full clone to be able to push back to Heroku.
+clone:
+  depth: full
+
+pipelines:
+  branches:
+    main:
+    - step:
+        name: Deploy to Heroku
+        deployment: production
+        script:
+          - apt-get update && apt-get install -y git
+          - git push https://heroku:c7bab9fd-21cf-418d-a1dc-a97c4deaeb5a@git.heroku.com/kolarestech-sgav.git
