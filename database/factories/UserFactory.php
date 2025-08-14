@@ -2,7 +2,7 @@
 
 namespace Database\Factories;
 
-use App\Enums\SituacaoUsuarioEnum;
+use App\Enums\MustChangePasswordEnum;
 use App\Enums\TipoUsuarioEnum;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
@@ -25,7 +25,7 @@ class UserFactory extends Factory
             'email' => 'dev@dev.com',
             'password' => Hash::make('secret'),
             'role' => TipoUsuarioEnum::ADMIN(),
-            'must_change_password' => false,
+            'must_change_password' => MustChangePasswordEnum::NO(),
             'situacao' => 1
         ];
     }

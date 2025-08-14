@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\MustChangePasswordEnum;
 use App\Enums\SituacaoUsuarioEnum;
 use App\Enums\TipoUsuarioEnum;
 use Illuminate\Database\Migrations\Migration;
@@ -21,7 +22,7 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->enum('role', TipoUsuarioEnum::getValues())->default(TipoUsuarioEnum::OPERADOR());
-            $table->boolean('must_change_password')->default(true);
+            $table->enum('must_change_password', MustChangePasswordEnum::getValues())->default(MustChangePasswordEnum::YES());
             $table->enum('situacao', SituacaoUsuarioEnum::getValues())->default(SituacaoUsuarioEnum::ATIVO());
             $table->rememberToken();
             $table->timestamps();
