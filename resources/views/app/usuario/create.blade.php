@@ -13,6 +13,6 @@
 @include('components.alerts.form-errors')
 
 <form action="{{ route('usuario.store') }}" method="POST">
-    @include('app.usuario.partials.form')
+    @include('app.usuario.partials.form', compact('formData'))
 </form>
 @endsection

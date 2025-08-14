@@ -20,6 +20,9 @@ class UsuarioStoreRequest extends FormRequest
             "email" => [
                 "required", "min:5", "max:254", "email", "unique:users,email"
             ],
+            "role" => [
+                "required"
+            ],
             "situacao" => [
                 "required"
             ]
