@@ -3,10 +3,11 @@
 namespace App\DTO\Usuario;
 
 use App\DTO\BaseDTO;
+use App\Enums\MustChangePasswordEnum;
 use App\Enums\SituacaoUsuarioEnum;
 use App\Enums\TipoUsuarioEnum;
+use App\Helpers\PasswordHelper;
 use App\Http\Requests\App\Usuario\UsuarioStoreRequest;
-use Illuminate\Support\Facades\Hash;
 
 class UsuarioStoreDTO extends BaseDTO
 {
@@ -25,8 +26,8 @@ class UsuarioStoreDTO extends BaseDTO
             $request->name,
             $request->email,
             TipoUsuarioEnum::getValue($request->role),
-            Hash::make('123456'),
-            true,
+            PasswordHelper::generateTemporaryPassword(false),
+            MustChangePasswordEnum::YES()->value,
             SituacaoUsuarioEnum::getValue(SituacaoUsuarioEnum::getKey((int)$request->situacao))
         );
     }
