@@ -14,10 +14,10 @@ class PasswordHelper
      * @param int $length Tamanho da senha aleatória (se aplicável)
      * @return string Senha temporária já com hash
      */
-    public static function generateTemporaryPassword(bool $random = false, int $length = 8): string
+    public static function generateTemporaryPassword(bool $randomPassword = false, int $length = 8): string
     {
         // Senha fixa (primeiro acesso)
-        if (! $random) {
+        if (! $randomPassword) {
             return Hash::make('123456');
         }
 

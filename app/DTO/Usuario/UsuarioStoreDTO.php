@@ -26,7 +26,7 @@ class UsuarioStoreDTO extends BaseDTO
             $request->name,
             $request->email,
             TipoUsuarioEnum::getValue($request->role),
-            PasswordHelper::generateTemporaryPassword(false),
+            PasswordHelper::generateTemporaryPassword($randomPassword = false),
             MustChangePasswordEnum::YES()->value,
             SituacaoUsuarioEnum::getValue(SituacaoUsuarioEnum::getKey((int)$request->situacao))
         );
