@@ -2,6 +2,8 @@
 
 namespace App\Actions\Usuario;
 
+use App\Enums\TipoUsuarioEnum;
+
 class UsuarioCreateAction
 {
     public function __construct(
@@ -9,6 +11,8 @@ class UsuarioCreateAction
 
     public function exec(): array
     {
-        return [];
+        return [
+            'role' => TipoUsuarioEnum::asArray(),
+        ];
     }
 }

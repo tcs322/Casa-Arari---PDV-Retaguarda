@@ -29,6 +29,9 @@ class UsuarioUpdateRequest extends FormRequest
             "email" => [
                 "required", "min:5", "max:254", "email",
             ],
+            "role" => [
+                "required"
+            ],
             "situacao" => [
                 "required"
             ]
