@@ -10,6 +10,6 @@ use BenSampo\Enum\Enum;
  */
 final class MustChangePasswordEnum extends Enum
 {
-    const YES = 1;
-    const NO = 0;
+    const YES = '1';
+    const NO = '0';
 }

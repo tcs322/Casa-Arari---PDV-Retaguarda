@@ -11,6 +11,7 @@
 //     Route::get('/auth/logout', function() {  Auth::logout(); return redirect()->route('dashboard.index'); })->name('auth.logout');
 // });
 
+use App\Http\Controllers\Auth\ChangePasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use Illuminate\Support\Facades\Route;
 
@@ -22,4 +23,14 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', function () {
         return view('app.dashboard.index');
     })->name('dashboard.index');
+});
+
+// troca de senha
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('/password/change', [ChangePasswordController::class, 'showForm'])
+        ->name('auth.password.change.form');
+
+    Route::post('/password/change', [ChangePasswordController::class, 'update'])
+        ->name('auth.password.change');
 });

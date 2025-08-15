@@ -19,6 +19,8 @@ class UsuarioUpdateController extends Controller
             'uuid' => $uuid,
         ]);
 
+        dd($updateRequest->all());
+
         $this->updateAction->exec(UsuarioUpdateDTO::makeFromRequest($updateRequest));
 
         return redirect()->route('usuario.index')->with('message', 'Registro atualizado');
