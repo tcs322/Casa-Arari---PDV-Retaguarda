@@ -3,22 +3,17 @@
 namespace App\Http\Middleware;
 
 use Closure;
-use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
-use App\Enums\MustChangePasswordEnum;
 
-class EnsurePasswordChanged
+class EnsureUserIsAdmin
 {
-    public function handle(Request $request, Closure $next): Response
+    public function handle($request, Closure $next): Response
     {
-        $user = $request->user();
-
-        if ($user && $user->must_change_password === MustChangePasswordEnum::YES()->value) {
-            if (! $request->routeIs('password.change') && ! $request->routeIs('password.update')) {
-                return redirect()->route('password.change');
-            }
+        if (Auth::check() && Auth::user()->role === 'ADMIN') {
+            return $next($request);
         }
 
-        return $next($request);
+        abort(403, 'Acesso negado.');
     }
 }

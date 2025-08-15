@@ -19,7 +19,7 @@ Route::get('/login', [LoginController::class, 'showLoginForm'])->name('auth.logi
 Route::post('/login', [LoginController::class, 'login'])->name('auth.login');
 Route::post('/logout', [LoginController::class, 'logout'])->name('auth.logout');
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'force_password_change'])->group(function () {
     Route::get('/dashboard', function () {
         return view('app.dashboard.index');
     })->name('dashboard.index');
