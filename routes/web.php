@@ -9,6 +9,6 @@ Route::post('product', [App\Http\Controllers\App\Product\ProductController::clas
 Route::get('product/create-many', [App\Http\Controllers\App\Product\ProductController::class, 'createManyByXml'])->name('product.create-many');
 
 
-Route::middleware(['auth.basic'])->group(function() {
+Route::middleware(['auth'])->group(function() {
     Route::get('/dashboard', [DashboardIndexController::class, 'index'])->name('dashboard.index');
 });

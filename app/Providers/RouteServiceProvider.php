@@ -33,7 +33,7 @@ class RouteServiceProvider extends ServiceProvider
                 ->prefix('api')
                 ->group(base_path('routes/api.php'));
 
-            Route::middleware(['web', 'auth', 'force_password_change'])
+            Route::middleware(['web', 'auth', 'force_password_change', 'is_admin'])
                 ->group(base_path('routes/web.php'))
                 ->group(base_path('routes/app/fornecedor.php'))
                 ->group(base_path('routes/app/compra.php'))
