@@ -3,18 +3,18 @@
 @section('content-auth')
 <form method="POST" action="{{ route('auth.password.change') }}" class="max-w-sm m-4 p-10 bg-white bg-opacity-25 rounded shadow-xl">
     @csrf
-    <p class="text-white font-medium text-center text-lg font-bold">ALTERAR SENHA</p>
+    <p class="text-black font-medium text-center text-lg font-bold">ALTERAR SENHA</p>
     @include('components.alerts.form-errors')
 
     <div class="mt-2">
-        <label class="block text-sm text-white" for="password">Nova Senha</label>
+        <label class="block text-sm text-black" for="password">Nova Senha</label>
         <input name="password" id="password"
             class="w-full px-5 py-1 text-gray-700 bg-gray-300 rounded focus:outline-none focus:bg-white"
             type="password" placeholder="Digite a nova senha" required>
     </div>
 
     <div class="mt-2">
-        <label class="block text-sm text-white" for="password_confirmation">Confirmar Nova Senha</label>
+        <label class="block text-sm text-black" for="password_confirmation">Confirmar Nova Senha</label>
         <input name="password_confirmation" id="password_confirmation"
             class="w-full px-5 py-1 text-gray-700 bg-gray-300 rounded focus:outline-none focus:bg-white"
             type="password" placeholder="Confirme a nova senha" required>
