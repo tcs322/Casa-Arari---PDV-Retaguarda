@@ -23,7 +23,7 @@
             },
         };
     </script>
-    <title>Atenticação - {{config('app.name')}}</title>
+    <title>Autenticação - {{config('app.name')}}</title>
 </head>
 <script>
     function lighMode() {
@@ -55,12 +55,18 @@
 </body>
 </html>
     <style>
-      .login{
+      /* .login{
 
         background: url('https://tailwindadmin.netlify.app/dist/images/login-new.jpeg');
-
-      /* background: url('http://bit.ly/2gPLxZ4'); */
-      background-repeat: no-repeat;
-      background-size: cover;
+        background-repeat: no-repeat;
+        background-size: cover;
+    } */
+    .login {
+    background-image: url('{{ asset('images/casa-arari.jpeg') }}');
+    background-repeat: no-repeat;
+    background-size: contain;
+    background-position: center; /* centraliza */
+    background-color: #CDAB7A;
     }
+
     </style>
