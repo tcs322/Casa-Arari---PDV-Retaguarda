@@ -3,7 +3,7 @@
         'Documento',
         'Razão Social',
         'Nome Fantasia',
-        'Porte',
+        'Tipo',
         'Data cadastro',
         'Última atualização',
         'Opções'
@@ -17,7 +17,7 @@
             <td>{{$fornecedor->documento}}</td>
             <td>{{$fornecedor->razao_social}}</td>
             <td>{{$fornecedor->nome_fantasia}}</td>
-            <td>{{$fornecedor->porte}}</td>
+            <td>{{$fornecedor->tipo}}</td>
             <td>{{$fornecedor->created_at_for_humans}}</td>
             <td>{{$fornecedor->updated_at_for_humans}}</td>
             <td class="text-right">

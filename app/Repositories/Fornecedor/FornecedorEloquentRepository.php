@@ -40,7 +40,7 @@ class FornecedorEloquentRepository implements FornecedorRepositoryInterface
         if(!is_null($filter)) {
             $query->where("razao_social", "like", "%".$filter."%");
             $query->orWhere("nome_fantasia", "like", "%".$filter."%");
-            $query->orWhere("porte", "like", "%".$filter."%");
+            $query->orWhere("tipo", "like", "%".$filter."%");
             $query->orWhere("tipo_documento", "like", "%".$filter."%");
             $query->orWhere("documento", "like", "%".$filter."%");
         }

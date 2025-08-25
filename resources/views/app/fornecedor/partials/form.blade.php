@@ -15,12 +15,12 @@
 </div>
 <div class="flex flex-wrap -mx-3 mb-2">
     <x-layouts.inputs.input-normal-select-enum
-        label="Porte"
-        name="porte"
-        origin="porte"
+        label="Tipo de fornecedor"
+        name="tipo"
+        origin="tipo"
         lenght="4/12"
-        :data="$formData['porte']"
-        :value="$fornecedor->porte ?? old('porte')"
+        :data="$formData['tipo']"
+        :value="$fornecedor->tipo ?? old('tipo')"
     />
     <x-layouts.inputs.input-normal-select-enum
         label="Tipo Documento"
