@@ -37,5 +37,33 @@
         :value="$fornecedor->documento ?? old('documento')"
     />
 </div>
+<div class="flex flex-wrap -mx-3 mb-2">
+    <x-layouts.inputs.input-normal-text
+        label="Endereço"
+        name="endereco"
+        lenght="6/12"
+        :value="$fornecedor->endereco ?? old('endereco')"
+    />
+    <x-layouts.inputs.input-normal-text
+        label="Cidade"
+        name="cidade"
+        lenght="6/12"
+        :value="$fornecedor->cidade ?? old('cidade')"
+    />
+</div>
+<div class="flex flex-wrap -mx-3 mb-2">
+    <x-layouts.inputs.input-normal-text
+        label="UF"
+        name="uf"
+        lenght="3/12"
+        :value="$fornecedor->uf ?? old('uf')"
+    />
+    <x-layouts.inputs.input-normal-text
+        label="Número"
+        name="numero"
+        lenght="3/12"
+        :value="$fornecedor->numero ?? old('numero')"
+    />
+</div>
 
 <x-layouts.buttons.submit-button text="Salvar"  />
