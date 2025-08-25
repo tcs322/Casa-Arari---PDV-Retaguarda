@@ -14,6 +14,10 @@ class FornecedorUpdateDTO extends BaseDTO
         public string $razao_social,
         public string $nome_fantasia,
         public string $documento,
+        public string $endereco,
+        public string $cidade,
+        public string $uf,
+        public string $numero,
         public string $tipo,
         public string $tipo_documento
     ){ }
@@ -25,6 +29,10 @@ class FornecedorUpdateDTO extends BaseDTO
             $request->razao_social,
             $request->nome_fantasia,
             $request->documento,
+            $request->endereco,
+            $request->cidade,
+            $request->uf,
+            $request->numero,
             TipoFornecedorEnum::getValue($request->tipo),
             TipoDocumentoPessoaJuridicaEnum::getValue($request->tipo_documento)
         );
