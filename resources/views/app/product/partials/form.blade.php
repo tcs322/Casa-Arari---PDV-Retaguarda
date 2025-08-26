@@ -11,7 +11,7 @@
         label="Nome/Título"
         name="nome_titulo"
         lenght="6/12"
-        :value="$product->nome ?? old('nome')"
+        :value="$product->nome_titulo ?? old('nome_titulo')"
     />
 </div>
 <div class="flex flex-wrap -mx-3 mb-2">

@@ -212,3 +212,7 @@ Breadcrumbs::for('produto.create', function (BreadcrumbTrail $trail) {
     $trail->parent('produto');
     $trail->push('Novo Produto', route('produto.create'));
 });
+Breadcrumbs::for('produto.edit', function (BreadcrumbTrail $trail, $produto) {
+    $trail->parent('produto');
+    $trail->push('Edição de Produto', route('produto.edit', $produto));
+});

@@ -3,6 +3,7 @@
         'Nome',
         'Preço',
         'Qtd Em Estoque',
+        'Tipo',
         'Ações'
     ]"
     :paginator="$products"
@@ -14,6 +15,7 @@
                 <td>{{ $product->nome_titulo }}</td>
                 <td>{{ $product->preco }}</td>
                 <td>{{ $product->estoque }}</td>
+                <td>{{ $product->tipo }}</td>
                 <td class="text-right">
                 <x-layouts.buttons.action-button
                     text="Ver"
@@ -24,7 +26,7 @@
                     text="Editar"
                     action="editar"
                     color="primary"
-                    :route="route('fornecedor.edit', $product->uuid)"/>
+                    :route="route('produto.edit', $product->uuid)"/>
                 <x-layouts.buttons.action-button
                     text="Excluir"
                     action="excluir"

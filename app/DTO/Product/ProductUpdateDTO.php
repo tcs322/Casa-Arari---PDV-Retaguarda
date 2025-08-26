@@ -3,11 +3,12 @@
 namespace App\DTO\Product;
 
 use App\Enums\TipoProdutoEnum;
-use App\Http\Requests\App\Product\ProductStoreRequest;
+use App\Http\Requests\App\Product\ProductUpdateRequest;
 
-class ProductStoreDTO
+class ProductUpdateDTO
 {
     public function __construct(
+        public string $uuid,
         public string $codigo,
         public string $nome_titulo,
         public string $preco,
@@ -18,9 +19,10 @@ class ProductStoreDTO
         public string $fornecedor_uuid
     ) {}
 
-    public static function makeFromRequest(ProductStoreRequest $request): self
+    public static function makeFromRequest(ProductUpdateRequest $request): self
     {
         return new self(
+            $request->uuid,
             $request->codigo,
             $request->nome_titulo,
             $request->preco,

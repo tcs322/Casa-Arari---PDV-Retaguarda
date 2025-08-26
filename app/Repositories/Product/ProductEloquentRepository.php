@@ -3,6 +3,7 @@
 namespace App\Repositories\Product;
 
 use App\DTO\Product\ProductStoreDTO;
+use App\DTO\Product\ProductUpdateDTO;
 use App\Models\Product;
 use App\Repositories\Interfaces\PaginationInterface;
 use App\Repositories\Presenters\PaginationPresenter;
@@ -41,5 +42,17 @@ class ProductEloquentRepository implements ProductRepositoryInterface
     public function store(ProductStoreDTO $dto): Product
     {
         return $this->model->create((array) $dto);
+    }
+
+    public function find(string $uuid): Product
+    {
+        return $this->model->where("uuid", $uuid)->first();
+    }
+
+    public function update(ProductUpdateDTO $dto): Product
+    {
+        $this->model->where("uuid", $dto->uuid)->update((array)$dto);
+
+        return $this->find($dto->uuid);
     }
 }

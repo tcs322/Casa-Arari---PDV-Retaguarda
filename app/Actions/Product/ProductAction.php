@@ -2,7 +2,9 @@
 
 namespace App\Actions\Product;
 
+use App\DTO\Product\ProductEditDTO;
 use App\DTO\Product\ProductStoreDTO;
+use App\DTO\Product\ProductUpdateDTO;
 use App\Enums\TipoProdutoEnum;
 use App\Models\Product;
 use App\Repositories\Cliente\ClienteRepositoryInterface;
@@ -35,5 +37,15 @@ class ProductAction
     public function store(ProductStoreDTO $dto): Product
     {
         return $this->productRepository->store($dto);
+    }
+
+    public function edit(ProductEditDTO $dto): Product
+    {
+        return $this->productRepository->find($dto->uuid);
+    }
+
+    public function update(ProductUpdateDTO $dto): Product
+    {
+        return $this->productRepository->update($dto);
     }
 }
