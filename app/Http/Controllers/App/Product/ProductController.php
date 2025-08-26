@@ -37,7 +37,7 @@ class ProductController extends Controller
     {
         $this->action->store(ProductStoreDTO::makeFromRequest($request));
 
-        return redirect()->route('product.index');
+        return redirect()->route('produto.index');
     }
 
     public function createManyByXml()

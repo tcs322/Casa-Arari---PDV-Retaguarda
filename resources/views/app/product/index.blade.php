@@ -8,21 +8,7 @@
 
 @section('content')
 
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h1 class="h4 mb-0">Produtos ({{ $products->total() }})</h1>
-
-    <div class="d-flex gap-2">
-        <a href="{{ route('produto.create-many') }}"
-           style="background-color: #28a745; color: #fff; padding: 8px 16px; border: none; border-radius: 4px; text-decoration: none; display: inline-block;">
-            Carregar via XML
-        </a>
-
-        <a href="{{ route('produto.create') }}"
-           style="background-color: #28a745; color: #fff; padding: 8px 16px; border: none; border-radius: 4px; text-decoration: none; display: inline-block;">
-            Novo Produto
-        </a>
-    </div>
-</div>
+<x-layouts.headers.list-header :count="$products->total()" :title="'Produtos'" :route="'produto/create'"/>
 
 @include('components.alerts.form-success')
 

@@ -19,18 +19,18 @@
                     text="Ver"
                     action="ver"
                     color="secondary"
-                    :route="route('cargo.show', $product->uuid)"/>
+                    :route="route('fornecedor.show', $product->uuid)"/>
                 <x-layouts.buttons.action-button
                     text="Editar"
                     action="editar"
                     color="primary"
-                    :route="route('promotor.edit', $product->uuid)"/>
+                    :route="route('fornecedor.edit', $product->uuid)"/>
                 <x-layouts.buttons.action-button
                     text="Excluir"
                     action="excluir"
                     color="danger"
                     :identificador="'drawer-delete-confirmacao'"
-                    :route="route('promotor.delete', [
+                    :route="route('fornecedor.edit', [
                         'uuid' => $product->uuid
                     ])"
                 />
