@@ -1,7 +1,7 @@
 <?php
 
-use App\Enums\PortePessoaJuridicaEnum;
 use App\Enums\TipoDocumentoPessoaJuridicaEnum;
+use App\Enums\TipoFornecedorEnum;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -18,11 +18,15 @@ return new class extends Migration
             $table->uuid()->unique();
             $table->string("razao_social");
             $table->string("nome_fantasia");
+            $table->string("endereco")->nullable();
+            $table->string("cidade")->nullable();
+            $table->string("uf")->nullable();
+            $table->string("numero")->nullable();
             $table->string("documento");
             $table->enum('tipo_documento', TipoDocumentoPessoaJuridicaEnum::getValues())
                 ->default(TipoDocumentoPessoaJuridicaEnum::CNPJ());
-            $table->enum('porte', PortePessoaJuridicaEnum::getValues())
-                ->default(PortePessoaJuridicaEnum::ME());
+            $table->enum('tipo', TipoFornecedorEnum::getValues())
+                ->default(TipoFornecedorEnum::Livraria());
             $table->timestamps();
         });
     }

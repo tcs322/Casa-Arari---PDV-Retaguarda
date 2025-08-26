@@ -16,7 +16,11 @@ class Fornecedor extends Model
         "uuid",
         "razao_social",
         "nome_fantasia",
-        "porte",
+        "endereco",
+        "cidade",
+        "uf",
+        "numero",
+        "tipo",
         "tipo_documento",
         "documento"
     ];

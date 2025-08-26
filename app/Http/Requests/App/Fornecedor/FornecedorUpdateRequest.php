@@ -29,6 +29,10 @@ class FornecedorUpdateRequest extends FormRequest
             "razao_social" => [
                 "required", "min:5", "max:254"
             ],
+            "endereco" => ["string"],
+            "cidade" => ["string"],
+            "uf" => ["string", "size:2"],
+            "numero" => ["string"],
         ];
     }
 }

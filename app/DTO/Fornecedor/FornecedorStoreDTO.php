@@ -3,8 +3,8 @@
 namespace App\DTO\Fornecedor;
 
 use App\DTO\BaseDTO;
-use App\Enums\PortePessoaJuridicaEnum;
 use App\Enums\TipoDocumentoPessoaJuridicaEnum;
+use App\Enums\TipoFornecedorEnum;
 use App\Http\Requests\App\Fornecedor\FornecedorStoreRequest;
 
 class FornecedorStoreDTO extends BaseDTO
@@ -13,7 +13,11 @@ class FornecedorStoreDTO extends BaseDTO
         public string $razao_social,
         public string $nome_fantasia,
         public string $documento,
-        public string $porte,
+        public string $endereco,
+        public string $cidade,
+        public string $uf,
+        public string $numero,
+        public string $tipo,
         public string $tipo_documento
     ){ }
 
@@ -23,7 +27,11 @@ class FornecedorStoreDTO extends BaseDTO
             $request->razao_social,
             $request->nome_fantasia,
             $request->documento,
-            PortePessoaJuridicaEnum::getValue($request->porte),
+            $request->endereco,
+            $request->cidade,
+            $request->uf,
+            $request->numero,
+            TipoFornecedorEnum::getValue($request->tipo),
             TipoDocumentoPessoaJuridicaEnum::getValue($request->tipo_documento)
         );
     }

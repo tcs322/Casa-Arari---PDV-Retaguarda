@@ -2,8 +2,8 @@
 
 namespace App\Actions\Fornecedor;
 
-use App\Enums\PortePessoaJuridicaEnum;
 use App\Enums\TipoDocumentoPessoaJuridicaEnum;
+use App\Enums\TipoFornecedorEnum;
 
 class FornecedorCreateAction
 {
@@ -13,7 +13,7 @@ class FornecedorCreateAction
     public function exec(): array
     {
         return [
-            "porte" => PortePessoaJuridicaEnum::asArray(),
+            "tipo" => TipoFornecedorEnum::asArray(),
             "tipo_documento" => TipoDocumentoPessoaJuridicaEnum::asArray(),
         ];
     }
