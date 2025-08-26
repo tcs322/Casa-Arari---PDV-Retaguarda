@@ -1,7 +1,7 @@
 @extends('app.layouts.app')
 
 @section('breadcrumb')
-    {{ Breadcrumbs::render('product') }}
+    {{ Breadcrumbs::render('produto') }}
 @endsection
 
 @section('title', 'Produtos')
@@ -12,12 +12,12 @@
     <h1 class="h4 mb-0">Produtos ({{ $products->total() }})</h1>
 
     <div class="d-flex gap-2">
-        <a href="{{ route('product.create-many') }}"
+        <a href="{{ route('produto.create-many') }}"
            style="background-color: #28a745; color: #fff; padding: 8px 16px; border: none; border-radius: 4px; text-decoration: none; display: inline-block;">
             Carregar via XML
         </a>
 
-        <a href="{{ route('product.create') }}"
+        <a href="{{ route('produto.create') }}"
            style="background-color: #28a745; color: #fff; padding: 8px 16px; border: none; border-radius: 4px; text-decoration: none; display: inline-block;">
             Novo Produto
         </a>
