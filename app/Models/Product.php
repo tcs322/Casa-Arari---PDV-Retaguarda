@@ -17,6 +17,7 @@ class Product extends Model
         'estoque',
         'autor',
         'edicao',
+        'tipo',
         'fornecedor_uuid',
     ];
 

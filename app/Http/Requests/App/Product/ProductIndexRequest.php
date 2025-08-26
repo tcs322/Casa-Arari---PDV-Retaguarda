@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Requests\App\Produto;
+namespace App\Http\Requests\App\Product;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class ProdutoIndexRequest extends FormRequest
+class ProductIndexRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.

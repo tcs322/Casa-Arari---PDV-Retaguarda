@@ -5,11 +5,11 @@ namespace App\Enums;
 use BenSampo\Enum\Enum;
 
 /**
- * @method static static AGENDA()
- * @method static static CADERNO()
+ * @method static static LIVRARIA()
+ * @method static static CAFETERIA()
  */
 final class TipoProdutoEnum extends Enum
 {
-    const AGENDA = 'AGENDA';
-    const CADERNO = "CADERNO";
+    const LIVRARIA = 'LIVRARIA';
+    const CAFETERIA = "CAFETERIA";
 }

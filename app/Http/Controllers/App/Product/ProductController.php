@@ -5,6 +5,7 @@ namespace App\Http\Controllers\App\Product;
 use App\Actions\Product\ProductAction;
 use App\DTO\Product\ProductStoreDTO;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\App\Product\ProductStoreRequest;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
@@ -33,7 +34,7 @@ class ProductController extends Controller
         return view('app.product.index', compact('products', 'filters'));
     }
 
-    public function store(Request $request)
+    public function store(ProductStoreRequest $request)
     {
         $this->action->store(ProductStoreDTO::makeFromRequest($request));
 

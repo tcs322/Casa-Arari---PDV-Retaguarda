@@ -3,6 +3,7 @@
 namespace App\Actions\Product;
 
 use App\DTO\Product\ProductStoreDTO;
+use App\Enums\TipoProdutoEnum;
 use App\Models\Product;
 use App\Repositories\Cliente\ClienteRepositoryInterface;
 use App\Repositories\Fornecedor\FornecedorRepositoryInterface;
@@ -20,7 +21,8 @@ class ProductAction
     public function create(): array
     {
         return [
-            'fornecedores' => $this->fornecedorRepository->all()
+            'fornecedores' => $this->fornecedorRepository->all(),
+            'tipo' => TipoProdutoEnum::asArray()
         ];
     }
 
