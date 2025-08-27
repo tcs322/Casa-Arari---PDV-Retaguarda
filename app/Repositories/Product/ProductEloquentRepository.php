@@ -46,7 +46,7 @@ class ProductEloquentRepository implements ProductRepositoryInterface
 
     public function find(string $uuid): Product
     {
-        return $this->model->where("uuid", $uuid)->first();
+        return $this->model->with('fornecedor')->where("uuid", $uuid)->first();
     }
 
     public function update(ProductUpdateDTO $dto): Product
