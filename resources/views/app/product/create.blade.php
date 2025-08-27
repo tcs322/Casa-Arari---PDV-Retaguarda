@@ -1,7 +1,7 @@
 @extends('app.layouts.app')
 
 @section('breadcrumb')
-    {{ Breadcrumbs::render('product.create') }}
+    {{ Breadcrumbs::render('produto.create') }}
 @endsection
 
 @section('title', 'Novo Produto')
@@ -12,7 +12,7 @@
 
 @include('components.alerts.form-errors')
 
-<form action="{{ route('product.store') }}" method="POST">
+<form action="{{ route('produto.store') }}" method="POST">
     @csrf
     @include('app.product.partials.form')
 </form>

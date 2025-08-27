@@ -11,7 +11,7 @@
         label="Nome/Título"
         name="nome_titulo"
         lenght="6/12"
-        :value="$product->nome ?? old('nome')"
+        :value="$product->nome_titulo ?? old('nome_titulo')"
     />
 </div>
 <div class="flex flex-wrap -mx-3 mb-2">
@@ -40,6 +40,16 @@
         name="edicao"
         lenght="4/12"
         :value="$product->edicao ?? old('edicao')"
+    />
+</div>
+<div class="flex flex-wrap -mx-3 mb-2">
+    <x-layouts.inputs.input-normal-select-enum
+        label="Tipo"
+        name="tipo"
+        origin="tipo"
+        lenght="4/12"
+        :data="$formData['tipo']"
+        :value="$product->tipo ?? old('tipo')"
     />
 </div>
 <div class="flex flex-wrap -mx-3 mb-2">

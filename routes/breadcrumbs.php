@@ -186,14 +186,14 @@ Breadcrumbs::for('promotor.edit', function (BreadcrumbTrail $trail, $promotor) {
     $trail->push('Edição de Promotor', route('promotor.edit', $promotor));
 });
 
-Breadcrumbs::for('produto', function (BreadcrumbTrail $trail) {
-    $trail->parent('Dashboard' , route('dashboard.index'));
-    $trail->push('Produto', route('produto.index'));
-});
-Breadcrumbs::for('produto.create', function (BreadcrumbTrail $trail) {
-    $trail->parent('produto');
-    $trail->push('Novo Produto', route('produto.create'));
-});
+// Breadcrumbs::for('produto', function (BreadcrumbTrail $trail) {
+//     $trail->parent('Dashboard' , route('dashboard.index'));
+//     $trail->push('Produto', route('produto.index'));
+// });
+// Breadcrumbs::for('produto.create', function (BreadcrumbTrail $trail) {
+//     $trail->parent('produto');
+//     $trail->push('Novo Produto', route('produto.create'));
+// });
 
 Breadcrumbs::for('expedicao', function (BreadcrumbTrail $trail) {
     $trail->parent('Dashboard' , route('dashboard.index'));
@@ -204,11 +204,15 @@ Breadcrumbs::for('expedicao.create', function (BreadcrumbTrail $trail) {
     $trail->push('Nova Expedição', route('expedicao.create'));
 });
 
-Breadcrumbs::for('product', function (BreadcrumbTrail $trail) {
+Breadcrumbs::for('produto', function (BreadcrumbTrail $trail) {
     $trail->parent('Dashboard' , route('dashboard.index'));
-    $trail->push('Produto', route('product.index'));
+    $trail->push('Produto', route('produto.index'));
 });
-Breadcrumbs::for('product.create', function (BreadcrumbTrail $trail) {
-    $trail->parent('product');
-    $trail->push('Novo Produto', route('product.create'));
+Breadcrumbs::for('produto.create', function (BreadcrumbTrail $trail) {
+    $trail->parent('produto');
+    $trail->push('Novo Produto', route('produto.create'));
+});
+Breadcrumbs::for('produto.edit', function (BreadcrumbTrail $trail, $produto) {
+    $trail->parent('produto');
+    $trail->push('Edição de Produto', route('produto.edit', $produto));
 });

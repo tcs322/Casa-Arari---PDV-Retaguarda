@@ -1,12 +1,10 @@
 <?php
 
-namespace App\Http\Requests\App\Produto;
+namespace App\Http\Requests\App\Product;
 
-use App\Enums\TipoProdutoEnum;
-use BenSampo\Enum\Rules\EnumKey;
 use Illuminate\Foundation\Http\FormRequest;
 
-class ProdutoStoreRequest extends FormRequest
+class ProductShowRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -24,11 +22,7 @@ class ProdutoStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
-            // Defina as regras de validação aqui
-            "nome" => ["required", "min:3", "max:255"],
-            "descricao" => ["required", "min:3", "max:255"],
-            "peso" => ["required"],
-            "tipo" => ["required", new EnumKey(TipoProdutoEnum::class)]
+           
         ];
     }
 }
