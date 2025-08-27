@@ -6,3 +6,4 @@ Route::post('produto', [App\Http\Controllers\App\Product\ProductController::clas
 Route::get('produto/create-many', [App\Http\Controllers\App\Product\ProductController::class, 'createManyByXml'])->name('produto.create-many');
 Route::get('produto/{uuid}/edit', [App\Http\Controllers\App\Product\ProductController::class, 'edit'])->name('produto.edit');
 Route::put('produto/{uuid}/update', [App\Http\Controllers\App\Product\ProductController::class, 'update'])->name('produto.update');
+Route::get('produto/{uuid}/show', [App\Http\Controllers\App\Product\ProductController::class, 'show'])->name('produto.show');

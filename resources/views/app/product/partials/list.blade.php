@@ -21,7 +21,7 @@
                     text="Ver"
                     action="ver"
                     color="secondary"
-                    :route="route('fornecedor.show', $product->uuid)"/>
+                    :route="route('produto.show', $product->uuid)"/>
                 <x-layouts.buttons.action-button
                     text="Editar"
                     action="editar"
@@ -32,7 +32,7 @@
                     action="excluir"
                     color="danger"
                     :identificador="'drawer-delete-confirmacao'"
-                    :route="route('fornecedor.edit', [
+                    :route="route('produto.edit', [
                         'uuid' => $product->uuid
                     ])"
                 />
