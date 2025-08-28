@@ -16,6 +16,8 @@ use App\Repositories\Fornecedor\FornecedorEloquentRepository;
 use App\Repositories\Fornecedor\FornecedorRepositoryInterface;
 use App\Repositories\CondicaoPagamento\CondicaoPagamentoEloquentRepository;
 use App\Repositories\CondicaoPagamento\CondicaoPagamentoRepositoryInterface;
+use App\Repositories\Nota\NotaEloquentRepository;
+use App\Repositories\Nota\NotaRepositoryInterface;
 use App\Repositories\PlanoPagamento\PlanoPagamentoEloquentRepository;
 use App\Repositories\PlanoPagamento\PlanoPagamentoRepositoryInterface;
 use App\Repositories\Product\ProductEloquentRepository;
@@ -54,6 +56,9 @@ class AppServiceProvider extends ServiceProvider
         );
         $this->app->bind(
             ProductRepositoryInterface::class, ProductEloquentRepository::class
+        );
+        $this->app->bind(
+            NotaRepositoryInterface::class, NotaEloquentRepository::class
         );
     }
 

@@ -2,7 +2,7 @@
 
 @section('title', 'Adicionar Produtos')
 
-<x-layouts.headers.create-header :title="'Adicionar Produtos'"/>
+<x-layouts.headers.create-header :title="'Adicionar Nota'"/>
 
 @section('content')
 
