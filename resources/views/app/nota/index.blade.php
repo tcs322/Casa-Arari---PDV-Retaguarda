@@ -1,5 +1,9 @@
 @extends('app.layouts.app')
 
+@section('breadcrumb')
+    {{ Breadcrumbs::render('nota') }}
+@endsection
+
 @section('title', 'Notas')
 
 @section('content')

@@ -15,7 +15,7 @@ class ProductStoreDTO
         public string $autor,
         public int $edicao,
         public string $tipo,
-        public string $numero_nota,
+        public ?string $numero_nota,
         public string $fornecedor_uuid
     ) {}
 

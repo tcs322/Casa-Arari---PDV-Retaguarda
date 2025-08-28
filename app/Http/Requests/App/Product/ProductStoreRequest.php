@@ -32,7 +32,7 @@ class ProductStoreRequest extends FormRequest
             "autor" => ["string"],
             "edicao" => ["integer"],
             "tipo" => ["required", new EnumKey(TipoProdutoEnum::class)],
-            "numero_nota" => ["string"],
+            "numero_nota" => ["nullable", "string"],
             "fornecedor_uuid" => ["string"],
         ];
     }

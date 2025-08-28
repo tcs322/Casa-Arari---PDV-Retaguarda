@@ -106,7 +106,7 @@ class ProductItem extends Component
         }
 
         session()->flash('success', 'Produtos salvos com sucesso!');
-        return redirect()->route('product.index')->with('message', 'Entrada registrada');;
+        return redirect()->route('nota.index')->with('message', 'Entrada registrada');;
     }
 
 

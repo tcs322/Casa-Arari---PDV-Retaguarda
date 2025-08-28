@@ -13,10 +13,10 @@ class FornecedorStoreDTO extends BaseDTO
         public string $razao_social,
         public string $nome_fantasia,
         public string $documento,
-        public string $endereco,
-        public string $cidade,
-        public string $uf,
-        public string $numero,
+        public ?string $endereco,
+        public ?string $cidade,
+        public ?string $uf,
+        public ?string $numero,
         public string $tipo,
         public string $tipo_documento
     ){ }
