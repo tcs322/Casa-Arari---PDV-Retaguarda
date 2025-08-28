@@ -18,6 +18,7 @@ class Product extends Model
         'autor',
         'edicao',
         'tipo',
+        'numero_nota',
         'fornecedor_uuid',
     ];
 

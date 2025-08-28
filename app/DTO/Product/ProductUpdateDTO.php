@@ -16,6 +16,7 @@ class ProductUpdateDTO
         public string $autor,
         public int $edicao,
         public string $tipo,
+        public string $numero_nota,
         public string $fornecedor_uuid
     ) {}
 
@@ -30,6 +31,7 @@ class ProductUpdateDTO
             $request->autor,
             $request->edicao,
             TipoProdutoEnum::getValue($request->tipo),
+            $request->numero_nota,
             $request->fornecedor_uuid
         );
     }

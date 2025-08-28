@@ -33,6 +33,7 @@ class ProductUpdateRequest extends FormRequest
             "autor" => ["string"],
             "edicao" => ["integer"],
             "tipo" => ["required", new EnumKey(TipoProdutoEnum::class)],
+            "numero_nota" => ["string"],
             "fornecedor_uuid" => ["string"],
         ];
     }

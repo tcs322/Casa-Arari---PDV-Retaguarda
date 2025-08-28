@@ -22,6 +22,7 @@ return new class extends Migration
             $table->string('autor');
             $table->integer('edicao');
             $table->enum('tipo', TipoProdutoEnum::getValues())->default(TipoProdutoEnum::LIVRARIA());
+            $table->string('numero_nota')->nullable();
             $table->foreignUuid('fornecedor_uuid')->references('uuid')->on('fornecedores');
             $table->timestamps();
         });
