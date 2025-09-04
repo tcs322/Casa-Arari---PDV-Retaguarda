@@ -12,10 +12,10 @@ class ProductStoreDTO
         public string $nome_titulo,
         public string $preco,
         public int $estoque,
-        public string $autor,
-        public int $edicao,
+        public ?string $autor,
+        public ?int $edicao,
         public string $tipo,
-        public ?string $numero_nota,
+        public ?string $nota_uuid,
         public string $fornecedor_uuid
     ) {}
 
@@ -29,7 +29,7 @@ class ProductStoreDTO
             $request->autor,
             $request->edicao,
             TipoProdutoEnum::getValue($request->tipo),
-            $request->numero_nota,
+            $request->nota_uuid,
             $request->fornecedor_uuid
         );
     }

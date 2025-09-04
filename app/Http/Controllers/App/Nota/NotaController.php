@@ -34,7 +34,7 @@ class NotaController extends Controller
      */
     public function create()
     {
-        //
+        return view('app.nota.create');
     }
 
     /**

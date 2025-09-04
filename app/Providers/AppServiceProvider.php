@@ -3,10 +3,12 @@
 namespace App\Providers;
 
 use App\Models\Fornecedor;
+use App\Models\Nota;
 use App\Models\Product;
 use App\Models\Produto;
 use App\Models\User;
 use App\Observers\FornecedorObserver;
+use App\Observers\NotaObserver;
 use App\Observers\ProductObserver;
 use App\Observers\ProdutoObserver;
 use App\Observers\UsuarioObserver;
@@ -72,6 +74,7 @@ class AppServiceProvider extends ServiceProvider
         User::observe(UsuarioObserver::class);
         Produto::observe(ProdutoObserver::class);
         Product::observe(ProductObserver::class);
+        Nota::observe(NotaObserver::class);
 
         \DB::enableQueryLog();
         Validator::extend('validarIdadeAdmissao', function ($attribute, $value, $parameters, $validator) {

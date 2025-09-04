@@ -18,7 +18,7 @@ class Product extends Model
         'autor',
         'edicao',
         'tipo',
-        'numero_nota',
+        'nota_uuid',
         'fornecedor_uuid',
     ];
 

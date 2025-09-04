@@ -29,10 +29,10 @@ class ProductStoreRequest extends FormRequest
             "codigo" => ["required", "string", "unique:products,codigo"],
             "preco" => ["required", "decimal:0,2"],
             "estoque" => ["required", "integer"],
-            "autor" => ["string"],
-            "edicao" => ["integer"],
+            "autor" => ["nullable", "string"],
+            "edicao" => ["nullable", "integer"],
             "tipo" => ["required", new EnumKey(TipoProdutoEnum::class)],
-            "numero_nota" => ["nullable", "string"],
+            "nota_uuid" => ["nullable", "string"],
             "fornecedor_uuid" => ["string"],
         ];
     }
