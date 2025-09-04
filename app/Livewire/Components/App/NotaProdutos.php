@@ -38,25 +38,20 @@ class NotaProdutos extends Component
 
                 $nfeArray = $array['NFe'] ?? $array;
 
-                // Captura informações do emitente
                 $this->emitenteCnpj = $nfeArray['infNFe']['emit']['CNPJ'] ?? null;
                 $this->emitenteNome = $nfeArray['infNFe']['emit']['xNome'] ?? null;
 
-                // Captura número e valor total da nota
                 $this->numero_nota = $nfeArray['infNFe']['ide']['nNF'] ?? null;
                 $this->valor_total = $nfeArray['infNFe']['total']['ICMSTot']['vNF'] ?? null;
 
-                // Preenche as informações para exibição na view
                 $this->notaInfo = [
                     'numero' => $this->numero_nota,
                     'valor' => $this->valor_total ? number_format($this->valor_total, 2, ',', '.') : null,
                     'fornecedor' => $this->emitenteNome
                 ];
 
-                // Captura os produtos
                 $detList = $nfeArray['infNFe']['det'] ?? [];
 
-                // Garante que seja um array mesmo quando há apenas um produto
                 if (isset($detList['prod']) && !isset($detList[0])) {
                     $detList = [$detList];
                 }
@@ -90,14 +85,17 @@ class NotaProdutos extends Component
 
         $this->fornecedor_uuid = $fornecedor->uuid;
 
-        // Cria a nota primeiro
+        if (Nota::where('numero_nota', $this->numero_nota)->exists()) {
+            $this->addError('numero_nota', 'Esta nota fiscal já foi cadastrada anteriormente.');
+            return;
+        }
+
         $nota = Nota::create([
             'numero_nota'    => $this->numero_nota,
             'valor_total'    => $this->valor_total,
             'fornecedor_uuid'=> $this->fornecedor_uuid,
         ]);
 
-        // Depois cria/atualiza os produtos
         foreach ($this->produtos as $produto) {
             if (
                 !isset($produto['cProd'], $produto['xProd'], $produto['vUnCom'], $produto['qCom']) ||

@@ -1,4 +1,16 @@
 <div>
+    <!-- Exibe todos os erros no topo do formulário -->
+    @if($errors->any())
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            <strong class="font-bold">Erros encontrados:</strong>
+            <ul class="mt-1 list-disc list-inside">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+    @endif
+
     <form wire:submit.prevent="salvar">
         {{-- Informações da Nota --}}
         @if($notaInfo['numero'] || $notaInfo['valor'] || $notaInfo['fornecedor'])
@@ -10,6 +22,8 @@
                     <label for="numero" class="block text-sm font-medium text-gray-700">Número da Nota</label>
                     <input type="text" id="numero" value="{{ $notaInfo['numero'] ?? '' }}" 
                            class="w-full p-2 border rounded text-black bg-gray-50" readonly>
+                    <!-- Erro específico para número da nota -->
+                    @error('numero_nota') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                 </div>
 
                 <div>

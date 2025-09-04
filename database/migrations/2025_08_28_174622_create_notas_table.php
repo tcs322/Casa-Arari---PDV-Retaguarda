@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('notas', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
-            $table->string('numero_nota');
+            $table->string('numero_nota')->unique();
             $table->decimal('valor_total');
             $table->foreignUuid('fornecedor_uuid')->references('uuid')->on('fornecedores');
             $table->timestamps();
