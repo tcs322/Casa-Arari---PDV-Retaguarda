@@ -11,10 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('venda', function (Blueprint $table) {
+        Schema::create('vendas', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
-            $table->foreignUuid('cliente_uuid')->references('uuid')->on('cliente');
+            $table->foreignUuid('usuario_uuid')->references('uuid')->on('users');
+            $table->decimal('valor_total');
             $table->timestamps();
         });
     }
