@@ -36,6 +36,6 @@
         @else
             <p class="text-gray-600 mt-4">Nenhum produto carregado.</p>
         @endif
-        <button type="submit" style="background-color: #28a745; color: #fff; padding: 8px 16px; border: none; border-radius: 4px; text-decoration: none; display: inline-block;">Salvar Produtos</button>
+        <button type="submit" style="background-color: #28a745; color: #fff; padding: 8px 16px; border: none; border-radius: 4px; text-decoration: none; display: inline-block;">Salvar Nota</button>
     </form>
 </div>

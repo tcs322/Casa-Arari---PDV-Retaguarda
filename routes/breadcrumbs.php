@@ -216,3 +216,8 @@ Breadcrumbs::for('produto.edit', function (BreadcrumbTrail $trail, $produto) {
     $trail->parent('produto');
     $trail->push('Edição de Produto', route('produto.edit', $produto));
 });
+
+Breadcrumbs::for('nota', function (BreadcrumbTrail $trail) {
+    $trail->parent('Dashboard' , route('dashboard.index'));
+    $trail->push('Nota', route('nota.index'));
+});

@@ -9,11 +9,11 @@ class Venda extends Model
 {
     use HasFactory;
 
-    protected $table = 'venda';
+    protected $table = 'vendas';
 
     protected $fillable = [
         'uuid',
-        'cliente_uuid',
-        'lote_uuid'
+        'usuario_uuid',
+        'valor_total'
     ];
 }

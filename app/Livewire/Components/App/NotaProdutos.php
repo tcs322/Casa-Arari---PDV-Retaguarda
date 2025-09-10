@@ -3,17 +3,26 @@
 namespace App\Livewire\Components\App;
 
 use App\Models\Product;
+use App\Models\Nota;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 
-class ProductItem extends Component
+class NotaProdutos extends Component
 {
     use WithFileUploads;
 
     public $xmlFile;
     public $produtos = [];
     public $emitenteCnpj;
+    public $emitenteNome;
     public $fornecedor_uuid;
+    public $numero_nota;
+    public $valor_total;
+    public $notaInfo = [
+        'numero' => null,
+        'valor' => null,
+        'fornecedor' => null
+    ];
 
     public function updated($property)
     {
@@ -29,15 +38,22 @@ class ProductItem extends Component
 
                 $nfeArray = $array['NFe'] ?? $array;
 
-                // Captura CNPJ do emitente
-                $cnpj = $nfeArray['infNFe']['emit']['CNPJ'] ?? null;
-                $this->emitenteCnpj = $cnpj;
+                $this->emitenteCnpj = $nfeArray['infNFe']['emit']['CNPJ'] ?? null;
+                $this->emitenteNome = $nfeArray['infNFe']['emit']['xNome'] ?? null;
 
-                // Captura os produtos
+                $this->numero_nota = $nfeArray['infNFe']['ide']['nNF'] ?? null;
+                $this->valor_total = $nfeArray['infNFe']['total']['ICMSTot']['vNF'] ?? null;
+
+                $this->notaInfo = [
+                    'numero' => $this->numero_nota,
+                    'valor' => $this->valor_total ? number_format($this->valor_total, 2, ',', '.') : null,
+                    'fornecedor' => $this->emitenteNome
+                ];
+
                 $detList = $nfeArray['infNFe']['det'] ?? [];
 
-                if (isset($detList['prod'])) {
-                    $detList = [$detList]; // garante que seja array
+                if (isset($detList['prod']) && !isset($detList[0])) {
+                    $detList = [$detList];
                 }
 
                 $this->produtos = collect($detList)->map(function ($item) {
@@ -46,14 +62,13 @@ class ProductItem extends Component
 
             } catch (\Exception $e) {
                 $this->addError('xmlFile', 'Erro ao processar o XML: ' . $e->getMessage());
+                $this->reset(['notaInfo', 'produtos']);
             }
         }
     }
 
-
     public function salvar()
     {
-        // Captura o CNPJ do emitente do primeiro produto
         $cnpj = $this->emitenteCnpj ?? null;
 
         if (!$cnpj) {
@@ -61,17 +76,25 @@ class ProductItem extends Component
             return;
         }
 
-        // Consulta o fornecedor pela base
         $fornecedor = \App\Models\Fornecedor::where('documento', $cnpj)->first();
 
-        // Se não encontrou, bloqueia
         if (!$fornecedor) {
             $this->addError('xmlFile', 'Fornecedor com CNPJ ' . $cnpj . ' não foi encontrado na base.');
             return;
         }
 
-        // Define o UUID para uso posterior
         $this->fornecedor_uuid = $fornecedor->uuid;
+
+        if (Nota::where('numero_nota', $this->numero_nota)->exists()) {
+            $this->addError('numero_nota', 'Esta nota fiscal já foi cadastrada anteriormente.');
+            return;
+        }
+
+        $nota = Nota::create([
+            'numero_nota'    => $this->numero_nota,
+            'valor_total'    => $this->valor_total,
+            'fornecedor_uuid'=> $this->fornecedor_uuid,
+        ]);
 
         foreach ($this->produtos as $produto) {
             if (
@@ -81,7 +104,7 @@ class ProductItem extends Component
                 continue;
             }
 
-            $registro = \App\Models\Product::where('codigo', $produto['cProd'])->first();
+            $registro = Product::where('codigo', $produto['cProd'])->first();
 
             if ($registro) {
                 $registro->update([
@@ -89,30 +112,24 @@ class ProductItem extends Component
                     'preco'           => $produto['vUnCom'],
                     'estoque'         => $registro->estoque + $produto['qCom'],
                     'fornecedor_uuid' => $this->fornecedor_uuid,
-                    'autor' => 'autor 1',
-                    'edicao' => 1
                 ]);
             } else {
-                \App\Models\Product::create([
+                Product::create([
                     'codigo'          => $produto['cProd'],
                     'nome_titulo'     => $produto['xProd'],
                     'preco'           => $produto['vUnCom'],
                     'estoque'         => $produto['qCom'],
                     'fornecedor_uuid' => $this->fornecedor_uuid,
-                    'autor' => 'autor 1',
-                    'edicao' => 1
                 ]);
             }
         }
 
-        session()->flash('success', 'Produtos salvos com sucesso!');
-        return redirect()->route('nota.index')->with('message', 'Entrada registrada');;
+        session()->flash('success', 'Nota e produtos salvos com sucesso!');
+        return redirect()->route('nota.index')->with('message', 'Entrada registrada com sucesso');
     }
-
-
 
     public function render()
     {
-        return view('livewire.components.app.product-item');
+        return view('livewire.components.app.nota-produtos');
     }
 }

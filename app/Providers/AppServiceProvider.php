@@ -3,10 +3,12 @@
 namespace App\Providers;
 
 use App\Models\Fornecedor;
+use App\Models\Nota;
 use App\Models\Product;
 use App\Models\Produto;
 use App\Models\User;
 use App\Observers\FornecedorObserver;
+use App\Observers\NotaObserver;
 use App\Observers\ProductObserver;
 use App\Observers\ProdutoObserver;
 use App\Observers\UsuarioObserver;
@@ -16,6 +18,8 @@ use App\Repositories\Fornecedor\FornecedorEloquentRepository;
 use App\Repositories\Fornecedor\FornecedorRepositoryInterface;
 use App\Repositories\CondicaoPagamento\CondicaoPagamentoEloquentRepository;
 use App\Repositories\CondicaoPagamento\CondicaoPagamentoRepositoryInterface;
+use App\Repositories\Nota\NotaEloquentRepository;
+use App\Repositories\Nota\NotaRepositoryInterface;
 use App\Repositories\PlanoPagamento\PlanoPagamentoEloquentRepository;
 use App\Repositories\PlanoPagamento\PlanoPagamentoRepositoryInterface;
 use App\Repositories\Product\ProductEloquentRepository;
@@ -55,6 +59,9 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(
             ProductRepositoryInterface::class, ProductEloquentRepository::class
         );
+        $this->app->bind(
+            NotaRepositoryInterface::class, NotaEloquentRepository::class
+        );
     }
 
 
@@ -67,6 +74,7 @@ class AppServiceProvider extends ServiceProvider
         User::observe(UsuarioObserver::class);
         Produto::observe(ProdutoObserver::class);
         Product::observe(ProductObserver::class);
+        Nota::observe(NotaObserver::class);
 
         \DB::enableQueryLog();
         Validator::extend('validarIdadeAdmissao', function ($attribute, $value, $parameters, $validator) {

@@ -19,9 +19,10 @@ return new class extends Migration
             $table->string('nome_titulo');
             $table->decimal('preco');
             $table->integer('estoque');
-            $table->string('autor');
-            $table->integer('edicao');
+            $table->string('autor')->nullable();
+            $table->integer('edicao')->nullable();
             $table->enum('tipo', TipoProdutoEnum::getValues())->default(TipoProdutoEnum::LIVRARIA());
+            $table->string('nota_uuid')->nullable();
             $table->foreignUuid('fornecedor_uuid')->references('uuid')->on('fornecedores');
             $table->timestamps();
         });

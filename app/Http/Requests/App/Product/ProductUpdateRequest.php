@@ -30,9 +30,10 @@ class ProductUpdateRequest extends FormRequest
             "codigo" => ["required", "string", "unique:products,codigo,$this->codigo,codigo"],
             "preco" => ["required", "decimal:0,2"],
             "estoque" => ["required", "integer"],
-            "autor" => ["string"],
-            "edicao" => ["integer"],
+            "autor" => ["nullable", "string"],
+            "edicao" => ["nullable", "integer"],
             "tipo" => ["required", new EnumKey(TipoProdutoEnum::class)],
+            "nota_uuid" => ["nullable", "string"],
             "fornecedor_uuid" => ["string"],
         ];
     }

@@ -11,11 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('vendas', function (Blueprint $table) {
+        Schema::create('notas', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
-            $table->foreignUuid('usuario_uuid')->references('uuid')->on('users');
+            $table->string('numero_nota')->unique();
             $table->decimal('valor_total');
+            $table->foreignUuid('fornecedor_uuid')->references('uuid')->on('fornecedores');
             $table->timestamps();
         });
     }
@@ -25,6 +26,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('venda');
+        Schema::dropIfExists('notas');
     }
 };
