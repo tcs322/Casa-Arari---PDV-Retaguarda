@@ -39,11 +39,13 @@ class RouteServiceProvider extends ServiceProvider
                 ->group(base_path('routes/app/compra.php'))
                 ->group(base_path('routes/app/usuario.php'))
                 ->group(base_path('routes/app/product.php'))
-                ->group(base_path('routes/app/venda.php'))
                 ->group(base_path('routes/app/nota.php'));
                 
             Route::middleware('web')
                 ->group(base_path('routes/app/auth.php'));
+
+            Route::middleware(['web', 'auth', 'force_password_change'])
+            ->group(base_path('routes/app/venda.php'));         
         });
     }
 }

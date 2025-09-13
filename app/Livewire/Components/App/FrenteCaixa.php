@@ -11,6 +11,9 @@ class FrenteCaixa extends Component
     public $produtosEncontrados = [];
     public $carrinho = [];
     public $totalCarrinho = 0;
+    public $descontoGeral = 0;
+    public $tipoDescontoGeral = 'percentual'; // 'percentual' ou 'valor'
+    public $descontosIndividuais = [];
 
     public function buscarProdutos()
     {
@@ -34,14 +37,11 @@ class FrenteCaixa extends Component
             return;
         }
 
-        // Verifica se o produto já está no carrinho
         $index = array_search($produtoId, array_column($this->carrinho, 'id'));
         
         if ($index !== false) {
-            // Incrementa quantidade se já existir
             $this->carrinho[$index]['quantidade']++;
         } else {
-            // Adiciona novo produto ao carrinho
             $this->carrinho[] = [
                 'id' => $produto->id,
                 'uuid' => $produto->uuid,
@@ -49,25 +49,43 @@ class FrenteCaixa extends Component
                 'nome' => $produto->nome_titulo,
                 'preco' => $produto->preco,
                 'quantidade' => 1,
-                'subtotal' => $produto->preco
+                'subtotal' => $produto->preco,
+                'desconto' => 0,
+                'tipo_desconto' => 'percentual'
             ];
         }
 
         $this->calcularTotal();
-        $this->search = ''; // Limpa a busca
-        $this->produtosEncontrados = []; // Limpa resultados
+        $this->search = '';
+        $this->produtosEncontrados = [];
     }
 
     public function atualizarQuantidade($index, $quantidade)
     {
         if ($quantidade < 1) {
             unset($this->carrinho[$index]);
-            $this->carrinho = array_values($this->carrinho); // Reindexa array
+            $this->carrinho = array_values($this->carrinho);
         } else {
             $this->carrinho[$index]['quantidade'] = $quantidade;
             $this->carrinho[$index]['subtotal'] = $this->carrinho[$index]['preco'] * $quantidade;
         }
 
+        $this->calcularTotal();
+    }
+
+    public function aplicarDescontoIndividual($index, $desconto, $tipo = 'percentual')
+    {
+        if (!isset($this->carrinho[$index])) {
+            return;
+        }
+
+        $this->carrinho[$index]['desconto'] = floatval($desconto);
+        $this->carrinho[$index]['tipo_desconto'] = $tipo;
+        $this->calcularTotal();
+    }
+
+    public function aplicarDescontoGeral()
+    {
         $this->calcularTotal();
     }
 
@@ -80,16 +98,41 @@ class FrenteCaixa extends Component
 
     protected function calcularTotal()
     {
-        $this->totalCarrinho = array_sum(array_column($this->carrinho, 'subtotal'));
+        $total = 0;
+
+        foreach ($this->carrinho as $index => $item) {
+            $subtotal = $item['preco'] * $item['quantidade'];
+            
+            // Aplica desconto individual
+            if ($item['desconto'] > 0) {
+                if ($item['tipo_desconto'] === 'percentual') {
+                    $subtotal -= $subtotal * ($item['desconto'] / 100);
+                } else {
+                    $subtotal -= $item['desconto'];
+                }
+            }
+
+            $this->carrinho[$index]['subtotal'] = max($subtotal, 0);
+            $total += $this->carrinho[$index]['subtotal'];
+        }
+
+        // Aplica desconto geral
+        if ($this->descontoGeral > 0) {
+            if ($this->tipoDescontoGeral === 'percentual') {
+                $total -= $total * ($this->descontoGeral / 100);
+            } else {
+                $total -= $this->descontoGeral;
+            }
+        }
+
+        $this->totalCarrinho = max($total, 0);
     }
 
     public function finalizarVenda()
     {
         // TODO: Implementar lógica de finalização de venda
-        // Criar registro de venda, baixar estoque, etc.
-        
         session()->flash('success', 'Venda finalizada com sucesso!');
-        $this->reset(['carrinho', 'totalCarrinho', 'search', 'produtosEncontrados']);
+        $this->reset(['carrinho', 'totalCarrinho', 'search', 'produtosEncontrados', 'descontoGeral']);
     }
 
     public function render()
