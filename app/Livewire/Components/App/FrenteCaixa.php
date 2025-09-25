@@ -12,8 +12,7 @@ class FrenteCaixa extends Component
     public $carrinho = [];
     public $totalCarrinho = 0;
     public $descontoGeral = 0;
-    public $tipoDescontoGeral = 'percentual'; // 'percentual' ou 'valor'
-    public $descontosIndividuais = [];
+    public $tipoDescontoGeral = 'percentual';
 
     public function buscarProdutos()
     {
@@ -103,7 +102,6 @@ class FrenteCaixa extends Component
         foreach ($this->carrinho as $index => $item) {
             $subtotal = $item['preco'] * $item['quantidade'];
             
-            // Aplica desconto individual
             if ($item['desconto'] > 0) {
                 if ($item['tipo_desconto'] === 'percentual') {
                     $subtotal -= $subtotal * ($item['desconto'] / 100);
@@ -116,7 +114,6 @@ class FrenteCaixa extends Component
             $total += $this->carrinho[$index]['subtotal'];
         }
 
-        // Aplica desconto geral
         if ($this->descontoGeral > 0) {
             if ($this->tipoDescontoGeral === 'percentual') {
                 $total -= $total * ($this->descontoGeral / 100);
@@ -130,9 +127,21 @@ class FrenteCaixa extends Component
 
     public function finalizarVenda()
     {
-        // TODO: Implementar lógica de finalização de venda
-        session()->flash('success', 'Venda finalizada com sucesso!');
-        $this->reset(['carrinho', 'totalCarrinho', 'search', 'produtosEncontrados', 'descontoGeral']);
+        if (empty($this->carrinho)) {
+            session()->flash('error', 'Adicione produtos ao carrinho primeiro!');
+            return;
+        }
+
+        // Salva os dados da venda na sessão para passar para a próxima página
+        session()->put('venda_dados', [
+            'carrinho' => $this->carrinho,
+            'total' => $this->totalCarrinho,
+            'desconto_geral' => $this->descontoGeral,
+            'tipo_desconto_geral' => $this->tipoDescontoGeral
+        ]);
+
+        // Redireciona para a página de pagamento
+        return redirect()->route('frente-caixa.pagamento');
     }
 
     public function render()

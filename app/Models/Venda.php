@@ -14,6 +14,8 @@ class Venda extends Model
     protected $fillable = [
         'uuid',
         'usuario_uuid',
+        'forma_pagamento',
+        'bandeira_cartao',
         'valor_total'
     ];
 }

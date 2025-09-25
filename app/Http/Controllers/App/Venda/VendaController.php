@@ -12,4 +12,9 @@ class VendaController extends Controller
     {
         return view ('app.venda.create');
     }
+
+    public function pagamento()
+    {
+        return view('app.venda.pagamento');
+    } 
 }
