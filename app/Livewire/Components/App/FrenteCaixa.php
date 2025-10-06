@@ -95,6 +95,27 @@ class FrenteCaixa extends Component
         $this->calcularTotal();
     }
 
+    public function limparCarrinho()
+    {
+        // Limpa o carrinho atual
+        $this->carrinho = [];
+        
+        // Zera os totais e descontos
+        $this->totalCarrinho = 0;
+        $this->descontoGeral = 0;
+        $this->tipoDescontoGeral = 'percentual';
+        
+        // Limpa os dados da sessão se estiver usando
+        session()->forget('venda_dados');
+        session()->forget('carrinho');
+        
+        // Opcional: Feedback para o usuário
+        session()->flash('message', 'Carrinho limpo com sucesso!');
+        
+        // Se quiser emitir um evento para o JavaScript
+        $this->dispatch('carrinho-limpo');
+    }
+
     protected function calcularTotal()
     {
         $total = 0;

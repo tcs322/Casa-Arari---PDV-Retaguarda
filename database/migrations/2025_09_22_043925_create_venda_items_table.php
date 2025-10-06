@@ -15,17 +15,14 @@ return new class extends Migration
         Schema::create('venda_items', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
-            $table->uuid('venda_uuid');
-            $table->uuid('produto_uuid');
+            $table->foreignUuid('venda_uuid')->references('uuid')->on('vendas')->onDelete('cascade');
+            $table->foreignUuid('produto_uuid')->references('uuid')->on('products');
             $table->integer('quantidade');
             $table->decimal('preco_unitario', 10, 2);
             $table->decimal('subtotal', 10, 2);
             $table->decimal('desconto', 10, 2)->default(0);
             $table->string('tipo_desconto')->default('percentual');
             $table->timestamps();
-
-            $table->foreign('venda_uuid')->references('uuid')->on('vendas')->onDelete('cascade');
-            $table->foreign('produto_uuid')->references('uuid')->on('products')->onDelete('cascade');
         });
     }
 
