@@ -18,8 +18,19 @@ class Product extends Model
         'autor',
         'edicao',
         'tipo',
+        'tipo_producao',
         'nota_uuid',
         'fornecedor_uuid',
+        'ncm',
+        'cest',
+        'codigo_barras',
+        'unidade_medida',
+        'aliquota_icms',
+        'cst_icms',
+        'cst_pis',
+        'cst_cofins',
+        'cfop',
+        'origem',
     ];
 
     public function fornecedor()

@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\TipoProducaoProdutoEnum;
 use App\Enums\TipoProdutoEnum;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -15,13 +16,14 @@ return new class extends Migration
         Schema::create('products', function (Blueprint $table) {
             $table->id();
             $table->uuid()->unique();
-            $table->string('codigo')->unique();
+            $table->string('codigo')->unique()->nullable();
             $table->string('nome_titulo');
             $table->decimal('preco');
             $table->integer('estoque');
             $table->string('autor')->nullable();
             $table->integer('edicao')->nullable();
             $table->enum('tipo', TipoProdutoEnum::getValues())->default(TipoProdutoEnum::LIVRARIA());
+            $table->enum('tipo_producao', TipoProducaoProdutoEnum::getValues())->default(TipoProducaoProdutoEnum::INDUSTRIAL())->nullable();
             $table->string('nota_uuid')->nullable();
             $table->foreignUuid('fornecedor_uuid')->references('uuid')->on('fornecedores');
 
