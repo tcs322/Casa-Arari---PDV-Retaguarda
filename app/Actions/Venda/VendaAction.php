@@ -2,6 +2,8 @@
 
 namespace App\Actions\Venda;
 
+use App\DTO\Venda\VendaShowDTO;
+use App\Models\Venda;
 use App\Repositories\Interfaces\PaginationInterface;
 use App\Repositories\Venda\VendaEloquentRepository;
 
@@ -15,5 +17,10 @@ class VendaAction
     {
         return $this->repository->paginate(page: $page, totalPerPage: $totalPerPage, filter: $filter,
         );
+    }
+
+    public function show(VendaShowDTO $dto): Venda
+    {
+        return $this->repository->find($dto->uuid);
     }
 }

@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\App\Venda;
 
 use App\Actions\Venda\VendaAction;
+use App\DTO\Venda\VendaShowDTO;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\App\Venda\VendaShowRequest;
 use Illuminate\Http\Request;
 
 class VendaController extends Controller
@@ -33,5 +35,16 @@ class VendaController extends Controller
         $filters = ['filter' => $request->get('filter', '')];
         
         return view('app.venda.index', compact('vendas', 'filters'));
+    }
+
+    public function show(string $uuid, VendaShowRequest $request)
+    {
+        $request->merge([
+            "uuid" => $uuid
+        ]);
+
+        $venda = $this->action->show(VendaShowDTO::makeFromRequest($request));
+
+        return view('app.venda.show', ["venda" => $venda]);
     }
 }

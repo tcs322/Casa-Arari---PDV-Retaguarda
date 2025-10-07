@@ -24,6 +24,24 @@ return new class extends Migration
             $table->enum('tipo', TipoProdutoEnum::getValues())->default(TipoProdutoEnum::LIVRARIA());
             $table->string('nota_uuid')->nullable();
             $table->foreignUuid('fornecedor_uuid')->references('uuid')->on('fornecedores');
+
+            // Campos fiscais obrigatórios
+            $table->string('ncm', 8)->default('49019900');
+            $table->string('cest', 7)->nullable();
+            $table->string('codigo_barras', 14)->nullable();
+            $table->string('unidade_medida', 6)->default('UN');
+            
+            // Campos para classificação tributária
+            $table->decimal('aliquota_icms', 5, 2)->default(0);
+            $table->string('cst_icms', 3)->default('00');
+            $table->string('cst_pis', 2)->default('07');
+            $table->string('cst_cofins', 2)->default('07');
+            
+            // CFOP (Código Fiscal de Operações)
+            $table->string('cfop', 4)->default('5102');
+            
+            // Origem da mercadoria (0-Nacional, 1-Estrangeira, etc.)
+            $table->string('origem', 1)->default('0');
             $table->timestamps();
         });
     }

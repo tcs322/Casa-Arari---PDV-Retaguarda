@@ -36,4 +36,9 @@ class VendaEloquentRepository implements VendaRepositoryInterface
         return new PaginationPresenter($result);
 
     }
+
+    public function find(string $uuid): Venda
+    {
+        return $this->model->with('itens')->where("uuid", $uuid)->first();
+    }
 }

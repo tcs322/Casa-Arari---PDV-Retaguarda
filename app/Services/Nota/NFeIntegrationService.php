@@ -1,12 +1,14 @@
 <?php
-// app/Services/NFeIntegrationService.php
+// app/Services/Nota/NFeIntegrationService.php
 
 namespace App\Services\Nota;
 
+use App\Enums\FormaPagamentoEnum;
 use App\Models\Venda;
 use App\Models\Product;
-use Illuminate\Support\Facades\Http;
-use DomDocument;
+use Illuminate\Support\Facades\Log;
+use DOMDocument;
+use DOMElement;
 
 class NFeIntegrationService
 {
@@ -15,80 +17,77 @@ class NFeIntegrationService
     public function __construct()
     {
         $this->config = [
-            'ambiente' => config('nfe.ambiente', 2), // 2-Homologação
+            'ambiente' => config('nfe.ambiente', 2),
             'versao' => '4.00',
-            'codigo_uf' => '15', // Pará
+            'codigo_uf' => '15',
             'modelo' => '55',
         ];
     }
 
-    /**
-     * Gera e envia NF-e para uma venda
-     */
     public function emitirNFe(Venda $venda)
     {
         try {
-            // 1. Gerar XML da NF-e
+            Log::info('🔧 [MODO SIMULAÇÃO] Iniciando emissão SIMULADA de NF-e para venda: ' . $venda->uuid);
+
+            // 1. Gerar XML da NF-e (VAMOS CORRIGIR ESTA PARTE)
             $xmlData = $this->gerarXmlNFe($venda);
+            Log::info('📄 XML gerado para venda: ' . $venda->uuid);
+
+            // 2. Simular assinatura
+            $xmlAssinado = $this->assinarXmlSimulado($xmlData['xml']);
             
-            // 2. Assinar XML (implementar posteriormente)
-            $xmlAssinado = $this->assinarXml($xmlData['xml']);
+            // 3. Simular envio para SEFAZ
+            $resultadoSimulado = $this->simularEnvioSefaz($xmlAssinado, $venda, $xmlData['chave']);
             
-            // 3. Enviar para SEFAZ (ambiente de homologação)
-            $resposta = $this->enviarParaSefaz($xmlAssinado);
+            Log::info('✅ [SIMULAÇÃO] NF-e simulada com sucesso para venda: ' . $venda->uuid);
             
-            // 4. Processar resposta
-            if ($resposta['success']) {
-                return [
-                    'success' => true,
-                    'numero_nota' => $resposta['numero'],
-                    'chave_acesso' => $resposta['chave'],
-                    'xml' => $resposta['xml'],
-                    'mensagem' => 'NF-e autorizada com sucesso'
-                ];
-            } else {
-                throw new \Exception($resposta['erro']);
-            }
-            
+            return $resultadoSimulado;
+
         } catch (\Exception $e) {
+            Log::error('❌ Erro na simulação de NF-e para venda ' . $venda->uuid . ': ' . $e->getMessage());
+            
             return [
                 'success' => false,
                 'erro' => $e->getMessage(),
-                'mensagem' => 'Falha na emissão da NF-e'
+                'mensagem' => 'Falha na simulação da NF-e'
             ];
         }
     }
 
     /**
-     * Gera XML da NF-e baseado nos dados da venda
+     * GERA XML COMPLETO DA NF-E (MÉTODO CORRIGIDO)
      */
     private function gerarXmlNFe(Venda $venda)
     {
-        $itens = $venda->itens;
-        $cliente = null; // Implementar conforme seu modelo
+        $chave = $this->gerarChaveAcessoSimulada();
         
         $nfeData = [
-            'ide' => $this->gerarDadosIde(),
-            'emit' => $this->gerarDadosEmitente(),
-            'dest' => $this->gerarDadosDestinatario($cliente),
-            'det' => $this->gerarItens($itens),
-            'total' => $this->gerarTotais($venda, $itens),
-            'pag' => $this->gerarPagamento($venda),
-            'infAdic' => $this->gerarInformacoesAdicionais($venda)
+            'infNFe' => [
+                '@attributes' => [
+                    'versao' => $this->config['versao'],
+                    'Id' => 'NFe' . $chave
+                ],
+                'ide' => $this->gerarDadosIde(),
+                'emit' => $this->gerarDadosEmitente(),
+                'dest' => $this->gerarDadosDestinatario(),
+                'det' => $this->gerarItens($venda),
+                'total' => $this->gerarTotais($venda),
+                'pag' => $this->gerarPagamento($venda),
+                'infAdic' => $this->gerarInformacoesAdicionais($venda)
+            ]
         ];
 
         $xml = $this->gerarXml($nfeData);
-        $chave = $this->gerarChaveAcesso();
 
         return [
             'xml' => $xml,
             'chave' => $chave,
-            'numero' => $nfeData['ide']['nNF']
+            'numero' => $nfeData['infNFe']['ide']['nNF']
         ];
     }
 
     /**
-     * Gera dados do IDE (Identificação da NF-e)
+     * GERA DADOS DE IDENTIFICAÇÃO
      */
     private function gerarDadosIde()
     {
@@ -99,7 +98,7 @@ class NFeIntegrationService
             'mod' => $this->config['modelo'],
             'serie' => '1',
             'nNF' => $this->proximoNumeroNota(),
-            'dhEmi' => now()->format('c'),
+            'dhEmi' => now()->format('Y-m-d\TH:i:sP'),
             'tpNF' => '1', // 1-Saída
             'idDest' => '1', // 1-Operação interna
             'cMunFG' => '1501402', // Belém/PA
@@ -116,115 +115,180 @@ class NFeIntegrationService
     }
 
     /**
-     * Gera dados do emitente (sua livraria)
+     * GERA DADOS DO EMITENTE
      */
     private function gerarDadosEmitente()
     {
         return [
-            'CNPJ' => config('nfe.emitente_cnpj'),
-            'xNome' => config('nfe.emitente_razao_social'),
-            'xFant' => config('nfe.emitente_nome_fantasia'),
+            'CNPJ' => config('nfe.emitente_cnpj', '99999999000191'),
+            'xNome' => config('nfe.emitente_razao_social', 'LIVRARIA CAFETERIA DO PARA LTDA'),
+            'xFant' => config('nfe.emitente_nome_fantasia', 'Livraria & Café PA'),
             'enderEmit' => [
-                'xLgr' => config('nfe.emitente_logradouro'),
-                'nro' => config('nfe.emitente_numero'),
-                'xBairro' => config('nfe.emitente_bairro'),
-                'cMun' => config('nfe.emitente_codigo_municipio'),
-                'xMun' => config('nfe.emitente_municipio'),
-                'UF' => config('nfe.emitente_uf'),
-                'CEP' => config('nfe.emitente_cep'),
+                'xLgr' => 'AVENIDA PRESIDENTE VARGAS',
+                'nro' => '1000',
+                'xBairro' => 'CENTRO',
+                'cMun' => '1501402',
+                'xMun' => 'BELEM',
+                'UF' => 'PA',
+                'CEP' => '66000000',
                 'cPais' => '1058',
                 'xPais' => 'BRASIL',
-                'fone' => config('nfe.emitente_telefone')
+                'fone' => '9133334444'
             ],
-            'IE' => config('nfe.emitente_ie'),
-            'CRT' => config('nfe.emitente_crt', '1') // 1-Simples Nacional
+            'IE' => config('nfe.emitente_ie', '999999999'),
+            'CRT' => config('nfe.emitente_crt', '1')
         ];
     }
 
     /**
-     * Gera dados do destinatário
+     * GERA DADOS DO DESTINATÁRIO (CONSUMIDOR FINAL)
      */
-    private function gerarDadosDestinatario($cliente = null)
+    private function gerarDadosDestinatario()
     {
-        // Se não tem cliente, é consumidor final
-        if (!$cliente) {
-            return [
-                'CPF' => '99999999999', // CPF genérico para consumo
-                'xNome' => 'CONSUMIDOR FINAL',
-                'indIEDest' => '9', // Não contribuinte
-                'enderDest' => [
-                    'xLgr' => 'Não informado',
-                    'nro' => '0',
-                    'xBairro' => 'Não informado',
-                    'cMun' => '1501402', // Belém/PA
-                    'xMun' => 'BELEM',
-                    'UF' => 'PA',
-                    'CEP' => '66000000',
-                    'cPais' => '1058',
-                    'xPais' => 'BRASIL'
-                ]
-            ];
-        }
-
-        // Implementar lógica para cliente cadastrado
         return [
-            // ... dados do cliente cadastrado
+            'CPF' => '99999999999',
+            'xNome' => 'CONSUMIDOR FINAL',
+            'indIEDest' => '9', // Não contribuinte
+            'enderDest' => [
+                'xLgr' => 'Não informado',
+                'nro' => '0',
+                'xBairro' => 'Não informado',
+                'cMun' => '1501402',
+                'xMun' => 'BELEM',
+                'UF' => 'PA',
+                'CEP' => '66000000',
+                'cPais' => '1058',
+                'xPais' => 'BRASIL'
+            ]
         ];
     }
 
     /**
-     * Gera itens da NF-e baseado nos itens da venda
+     * Gera itens baseados nos dados reais da venda
      */
-    private function gerarItens($itensVenda)
+    private function gerarItens(Venda $venda)
     {
-        $itensNFe = [];
+        $itens = [];
+        $contador = 1;
         
-        foreach ($itensVenda as $index => $item) {
-            $produto = Product::where('uuid', $item->produto_uuid)->first();
+        // ✅ AGORA USANDO OS ITENS REAIS DA VENDA
+        foreach ($venda->itens as $itemVenda) {
+            $produto = Product::where('uuid', $itemVenda->produto_uuid)->first();
             
-            if (!$produto) continue;
-
-            $itemNFe = [
-                '@attributes' => ['nItem' => $index + 1],
-                'prod' => [
-                    'cProd' => $produto->codigo ?? $produto->uuid,
-                    'cEAN' => '7890000000000', // EAN genérico
-                    'xProd' => $produto->nome,
-                    'NCM' => $produto->ncm ?? $this->obterNcmPorCategoria($produto->categoria),
-                    'CEST' => $produto->cest ?? $this->obterCestPorCategoria($produto->categoria),
-                    'CFOP' => '5102',
-                    'uCom' => 'UN',
-                    'qCom' => number_format($item->quantidade, 4, '.', ''),
-                    'vUnCom' => number_format($item->preco_unitario, 2, '.', ''),
-                    'vProd' => number_format($item->subtotal, 2, '.', ''),
-                    'cEANTrib' => '7890000000000',
-                    'uTrib' => 'UN',
-                    'qTrib' => number_format($item->quantidade, 4, '.', ''),
-                    'vUnTrib' => number_format($item->preco_unitario, 2, '.', ''),
-                    'indTot' => '1'
-                ],
-                'imposto' => $this->gerarImpostosItem($produto, $item)
-            ];
-
-            $itensNFe[] = $itemNFe;
+            if ($produto) {
+                $itens[] = $this->gerarItemReal($itemVenda, $produto, $contador);
+                $contador++;
+            }
         }
 
-        return $itensNFe;
+        // Se não houver itens reais, usa os de teste (fallback)
+        if (empty($itens)) {
+            Log::warning('Nenhum item real encontrado para venda ' . $venda->uuid . ', usando dados de teste');
+            return $this->gerarItensTeste($venda);
+        }
+
+        return $itens;
     }
 
     /**
-     * Gera impostos para um item
+     * Gera itens de teste (fallback)
      */
-    private function gerarImpostosItem($produto, $item)
+    private function gerarItensTeste(Venda $venda)
     {
-        $valorTotal = $item->subtotal;
-        $categoria = strtolower($produto->categoria ?? '');
-        
-        // Livros são isentos, outros produtos têm ICMS normal
-        $isLivro = str_contains($categoria, 'livro') || 
-                   str_contains($categoria, 'literatura') ||
-                   ($produto->ncm ?? '') === '49019900';
+        $itens = [];
+        $itensTeste = [
+            [
+                'descricao' => 'LIVRO: DOM QUIXOTE',
+                'quantidade' => 1,
+                'valor_unitario' => $venda->valor_total * 0.7,
+                'ncm' => '49019900',
+                'cest' => '2800300'
+            ],
+            [
+                'descricao' => 'CAFÉ EXPRESSO',
+                'quantidade' => 1, 
+                'valor_unitario' => $venda->valor_total * 0.3,
+                'ncm' => '09012100',
+                'cest' => '0300800'
+            ]
+        ];
 
+        foreach ($itensTeste as $index => $item) {
+            $itens[] = $this->gerarItem($item, $index + 1);
+        }
+
+        return $itens;
+}
+
+    /**
+     * Gera item da NF-e baseado nos dados reais do carrinho
+     */
+    private function gerarItemReal($itemVenda, $produto, $numeroItem)
+    {
+        $valorTotal = $itemVenda->subtotal;
+        $valorUnitario = $itemVenda->preco_unitario;
+        $quantidade = $itemVenda->quantidade;
+
+        return [
+            '@attributes' => ['nItem' => $numeroItem],
+            'prod' => [
+                'cProd' => $produto->codigo,
+                'cEAN' => $produto->codigo_barras ?? '7890000000000',
+                'xProd' => $produto->nome_titulo,
+                'NCM' => $produto->ncm,
+                'CEST' => $produto->cest,
+                'CFOP' => $produto->cfop,
+                'uCom' => $produto->unidade_medida,
+                'qCom' => number_format($quantidade, 4, '.', ''),
+                'vUnCom' => number_format($valorUnitario, 2, '.', ''),
+                'vProd' => number_format($valorTotal, 2, '.', ''),
+                'cEANTrib' => $produto->codigo_barras ?? '7890000000000',
+                'uTrib' => $produto->unidade_medida,
+                'qTrib' => number_format($quantidade, 4, '.', ''),
+                'vUnTrib' => number_format($valorUnitario, 2, '.', ''),
+                'indTot' => '1'
+            ],
+            'imposto' => $this->gerarImpostosItemComCamposFiscais($produto, $valorTotal)
+        ];
+    }
+
+    private function gerarImpostosItemComCamposFiscais($produto, $valorTotal)
+    {
+        return [
+            'ICMS' => [
+                'ICMS00' => [
+                    'orig' => $produto->origem,
+                    'CST' => $produto->cst_icms,
+                    'modBC' => '3',
+                    'vBC' => number_format($valorTotal, 2, '.', ''),
+                    'pICMS' => number_format($produto->aliquota_icms, 2, '.', ''),
+                    'vICMS' => number_format(($valorTotal * $produto->aliquota_icms) / 100, 2, '.', '')
+                ]
+            ],
+            'PIS' => [
+                'PISAliq' => [
+                    'CST' => $produto->cst_pis,
+                    'vBC' => number_format($valorTotal, 2, '.', ''),
+                    'pPIS' => $produto->cst_pis == '07' ? '0' : '1.65',
+                    'vPIS' => number_format($produto->cst_pis == '07' ? 0 : ($valorTotal * 0.0165), 2, '.', '')
+                ]
+            ],
+            'COFINS' => [
+                'COFINSAliq' => [
+                    'CST' => $produto->cst_cofins,
+                    'vBC' => number_format($valorTotal, 2, '.', ''),
+                    'pCOFINS' => $produto->cst_cofins == '07' ? '0' : '7.6',
+                    'vCOFINS' => number_format($produto->cst_cofins == '07' ? 0 : ($valorTotal * 0.076), 2, '.', '')
+                ]
+            ]
+        ];
+    }
+
+    /**
+     * Gera impostos para item real
+     */
+    private function gerarImpostosItemReal($produto, $valorTotal, $isLivro)
+    {
         $aliquotaIcms = $isLivro ? 0 : 17.0;
         $valorIcms = ($valorTotal * $aliquotaIcms) / 100;
 
@@ -259,18 +323,184 @@ class NFeIntegrationService
     }
 
     /**
-     * Gera totais da NF-e
+     * Verifica se o produto é um livro
      */
-    private function gerarTotais(Venda $venda, $itens)
+    private function isProdutoLivro($produto)
+    {
+        // Estratégia 1: Verificar NCM específico para livros
+        if ($produto->ncm == '49019900') {
+            return true;
+        }
+        
+        // Estratégia 2: Verificar categoria
+        $categoria = strtolower($produto->categoria ?? '');
+        $palavrasChaveLivro = ['livro', 'literatura', 'revista', 'jornal', 'publicação'];
+        
+        foreach ($palavrasChaveLivro as $palavra) {
+            if (str_contains($categoria, $palavra)) {
+                return true;
+            }
+        }
+        
+        // Estratégia 3: Verificar nome do produto
+        $nome = strtolower($produto->nome);
+        foreach ($palavrasChaveLivro as $palavra) {
+            if (str_contains($nome, $palavra)) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+
+    /**
+     * Obtém NCM baseado na categoria (fallback)
+     */
+    private function obterNcmPorCategoria($categoria)
+    {
+        $mapeamento = [
+            'livro' => '49019900',
+            'cafe' => '09012100',
+            'alimento' => '19059000',
+            'bebida' => '22021000',
+            'papelaria' => '48201000'
+        ];
+
+        $categoriaLower = strtolower($categoria ?? '');
+        foreach ($mapeamento as $key => $ncm) {
+            if (str_contains($categoriaLower, $key)) {
+                return $ncm;
+            }
+        }
+
+        return '49019900'; // Default para livro
+    }
+
+    /**
+     * Obtém CEST baseado na categoria (fallback)
+     */
+    private function obterCestPorCategoria($categoria)
+    {
+        $mapeamento = [
+            'livro' => '2800300',
+            'cafe' => '0300800', 
+            'alimento' => '0400300',
+            'bebida' => '1100100',
+            'papelaria' => '2805300'
+        ];
+
+        $categoriaLower = strtolower($categoria ?? '');
+        foreach ($mapeamento as $key => $cest) {
+            if (str_contains($categoriaLower, $key)) {
+                return $cest;
+            }
+        }
+
+        return '2800300'; // Default para livro
+    }
+
+    /**
+     * GERA UM ITEM INDIVIDUAL
+     */
+    private function gerarItem($produto, $numeroItem)
+    {
+        $valorTotal = $produto['quantidade'] * $produto['valor_unitario'];
+        $isLivro = $produto['ncm'] === '49019900';
+
+        return [
+            '@attributes' => ['nItem' => $numeroItem],
+            'prod' => [
+                'cProd' => 'PROD' . $numeroItem,
+                'cEAN' => '7890000000000',
+                'xProd' => $produto['descricao'],
+                'NCM' => $produto['ncm'],
+                'CEST' => $produto['cest'],
+                'CFOP' => '5102',
+                'uCom' => 'UN',
+                'qCom' => number_format($produto['quantidade'], 4, '.', ''),
+                'vUnCom' => number_format($produto['valor_unitario'], 2, '.', ''),
+                'vProd' => number_format($valorTotal, 2, '.', ''),
+                'cEANTrib' => '7890000000000',
+                'uTrib' => 'UN',
+                'qTrib' => number_format($produto['quantidade'], 4, '.', ''),
+                'vUnTrib' => number_format($produto['valor_unitario'], 2, '.', ''),
+                'indTot' => '1'
+            ],
+            'imposto' => $this->gerarImpostosItem($produto, $valorTotal)
+        ];
+    }
+
+    /**
+     * GERA IMPOSTOS DO ITEM
+     */
+    private function gerarImpostosItem($produto, $valorTotal)
+    {
+        $isLivro = $produto['ncm'] === '49019900';
+        $aliquotaIcms = $isLivro ? 0 : 17.0;
+        $valorIcms = ($valorTotal * $aliquotaIcms) / 100;
+
+        return [
+            'ICMS' => [
+                'ICMS00' => [
+                    'orig' => '0',
+                    'CST' => '00',
+                    'modBC' => '3',
+                    'vBC' => number_format($valorTotal, 2, '.', ''),
+                    'pICMS' => number_format($aliquotaIcms, 2, '.', ''),
+                    'vICMS' => number_format($valorIcms, 2, '.', '')
+                ]
+            ],
+            'PIS' => [
+                'PISAliq' => [
+                    'CST' => $isLivro ? '07' : '01',
+                    'vBC' => number_format($valorTotal, 2, '.', ''),
+                    'pPIS' => $isLivro ? '0' : '1.65',
+                    'vPIS' => number_format($isLivro ? 0 : ($valorTotal * 0.0165), 2, '.', '')
+                ]
+            ],
+            'COFINS' => [
+                'COFINSAliq' => [
+                    'CST' => $isLivro ? '07' : '01',
+                    'vBC' => number_format($valorTotal, 2, '.', ''),
+                    'pCOFINS' => $isLivro ? '0' : '7.6',
+                    'vCOFINS' => number_format($isLivro ? 0 : ($valorTotal * 0.076), 2, '.', '')
+                ]
+            ]
+        ];
+    }
+
+    /**
+     * GERA TOTAIS
+     */
+    private function gerarTotais(Venda $venda)
     {
         $vBC = 0;
         $vICMS = 0;
         $vProd = $venda->valor_total;
+        $vPIS = 0;
+        $vCOFINS = 0;
 
-        foreach ($itens as $item) {
-            $vBC += $item->subtotal;
-            // Cálculo simplificado do ICMS
-            $vICMS += ($item->subtotal * 17) / 100; // Média 17%
+        // Calcular impostos baseados nos itens reais
+        foreach ($venda->itens as $itemVenda) {
+            $produto = Product::where('uuid', $itemVenda->produto_uuid)->first();
+            
+            if ($produto) {
+                $valorItem = $itemVenda->subtotal;
+                $vBC += $valorItem;
+                
+                // Só adiciona ICMS se não for isento
+                if ($produto->aliquota_icms > 0) {
+                    $vICMS += ($valorItem * $produto->aliquota_icms) / 100;
+                }
+                
+                // Só adiciona PIS/COFINS se não for isento
+                if ($produto->cst_pis != '07') {
+                    $vPIS += $valorItem * 0.0165; // 1.65%
+                }
+                if ($produto->cst_cofins != '07') {
+                    $vCOFINS += $valorItem * 0.076; // 7.6%
+                }
+            }
         }
 
         return [
@@ -290,8 +520,8 @@ class NFeIntegrationService
                 'vII' => '0.00',
                 'vIPI' => '0.00',
                 'vIPIDevol' => '0.00',
-                'vPIS' => number_format($vProd * 0.0165, 2, '.', ''),
-                'vCOFINS' => number_format($vProd * 0.076, 2, '.', ''),
+                'vPIS' => number_format($vPIS, 2, '.', ''),
+                'vCOFINS' => number_format($vCOFINS, 2, '.', ''),
                 'vOutro' => '0.00',
                 'vNF' => number_format($vProd, 2, '.', ''),
                 'vTotTrib' => '0.00'
@@ -300,7 +530,7 @@ class NFeIntegrationService
     }
 
     /**
-     * Gera dados de pagamento
+     * GERA PAGAMENTO
      */
     private function gerarPagamento(Venda $venda)
     {
@@ -317,72 +547,76 @@ class NFeIntegrationService
         ];
     }
 
-    /**
-     * Mapeia forma de pagamento para código da NF-e
-     */
     private function mapearFormaPagamentoNFe($formaPagamento)
     {
         $mapeamento = [
-            'dinheiro' => '01',
-            'cartao_credito' => '03',
-            'cartao_debito' => '04',
-            'pix' => '15'
+            FormaPagamentoEnum::DINHEIRO => '01',
+            FormaPagamentoEnum::CARTAO_CREDITO => '03',
+            FormaPagamentoEnum::CARTAO_DEBITO => '04', 
+            FormaPagamentoEnum::PIX => '15'
         ];
 
-        return $mapeamento[$formaPagamento] ?? '99'; // 99-Outros
+        return $mapeamento[$formaPagamento] ?? '99';
     }
 
     /**
-     * Gera informações adicionais
+     * GERA INFORMAÇÕES ADICIONAIS
      */
     private function gerarInformacoesAdicionais(Venda $venda)
     {
-        $info = "Venda realizada via PDV Livraria/Cafeteria\n";
-        $info .= "Nº Venda: {$venda->uuid}\n";
-        
-        if ($venda->observacoes) {
-            $info .= "Obs: {$venda->observacoes}\n";
-        }
-
         return [
-            'infCpl' => $info
+            'infCpl' => "Venda realizada via PDV Livraria/Cafeteria\nNº Venda: {$venda->uuid}"
         ];
     }
 
     /**
-     * Gera XML final (implementação simplificada)
+     * GERA XML FINAL (MÉTODO CORRIGIDO)
      */
     private function gerarXml($nfeData)
     {
-        // Implementação básica - expandir conforme necessário
-        $xml = new DOMDocument('1.0', 'UTF-8');
-        $xml->formatOutput = true;
+        $dom = new DOMDocument('1.0', 'UTF-8');
+        $dom->formatOutput = true;
         
-        $nfeElement = $xml->createElement('NFe');
+        $nfeElement = $dom->createElement('NFe');
         $nfeElement->setAttribute('xmlns', 'http://www.portalfiscal.inf.br/nfe');
         
-        $infNFe = $xml->createElement('infNFe');
-        $infNFe->setAttribute('versao', '4.00');
-        $infNFe->setAttribute('Id', 'NFe' . $this->gerarChaveAcesso());
+        $this->arrayParaXml($nfeData['infNFe'], $nfeElement, $dom);
         
-        // Adicionar elementos ao XML...
+        $dom->appendChild($nfeElement);
         
-        $nfeElement->appendChild($infNFe);
-        $xml->appendChild($nfeElement);
-        
-        return $xml->saveXML();
+        return $dom->saveXML();
     }
 
     /**
-     * Gera chave de acesso
+     * CONVERTE ARRAY PARA XML
      */
-    private function gerarChaveAcesso()
+    private function arrayParaXml($array, $elementoPai, $dom)
     {
-        // Implementação simplificada
-        return '15' . date('y') . date('m') . config('nfe.emitente_cnpj') . '55' . 
-               str_pad($this->proximoNumeroNota(), 9, '0', STR_PAD_LEFT) . '100000000';
+        foreach ($array as $chave => $valor) {
+            if ($chave === '@attributes') {
+                foreach ($valor as $attr => $attrValor) {
+                    $elementoPai->setAttribute($attr, $attrValor);
+                }
+            } else {
+                if (is_numeric($chave)) {
+                    $elementoFilho = $dom->createElement($elementoPai->tagName);
+                } else {
+                    $elementoFilho = $dom->createElement($chave);
+                }
+                
+                if (is_array($valor)) {
+                    $this->arrayParaXml($valor, $elementoFilho, $dom);
+                } else {
+                    $elementoFilho->nodeValue = htmlspecialchars($valor);
+                }
+                
+                $elementoPai->appendChild($elementoFilho);
+            }
+        }
     }
 
+    // ... MANTENHA OS OUTROS MÉTODOS (assinarXmlSimulado, simularEnvioSefaz, etc.)
+    
     private function gerarCodigoNumerico()
     {
         return rand(10000000, 99999999);
@@ -390,68 +624,63 @@ class NFeIntegrationService
 
     private function proximoNumeroNota()
     {
-        // Buscar último número usado no banco
         $ultimaNFe = Venda::whereNotNull('numero_nota_fiscal')
                           ->orderBy('created_at', 'desc')
                           ->first();
         
-        return $ultimaNFe ? intval(substr($ultimaNFe->numero_nota_fiscal, -8)) + 1 : 1;
+        return $ultimaNFe ? intval($ultimaNFe->numero_nota_fiscal) + 1 : 1;
     }
 
-    private function assinarXml($xml)
+    private function assinarXmlSimulado($xml)
     {
-        // TODO: Implementar assinatura digital
+        Log::info('🔏 [SIMULAÇÃO] Simulando assinatura digital');
         return $xml;
     }
 
-    private function enviarParaSefaz($xml)
+    private function simularEnvioSefaz($xmlAssinado, Venda $venda, $chave)
     {
-        // TODO: Implementar envio real para SEFAZ
-        // Por enquanto, simula sucesso
+        Log::info('🌐 [SIMULAÇÃO] Simulando envio para SEFAZ');
+        
+        sleep(1); // Simula processamento
+        
         return [
             'success' => true,
-            'numero' => $this->proximoNumeroNota(),
-            'chave' => $this->gerarChaveAcesso(),
-            'xml' => $xml,
-            'protocolo' => '123456789012345'
+            'numero_nota' => $this->proximoNumeroNota(),
+            'chave_acesso' => $chave,
+            'numero_protocolo' => '123456789012345',
+            'xml' => $xmlAssinado,
+            'mensagem' => '✅ [SIMULAÇÃO] NF-e autorizada com sucesso - MODO TESTE'
         ];
     }
 
-    private function obterNcmPorCategoria($categoria)
+    private function gerarChaveAcessoSimulada()
     {
-        $mapeamento = [
-            'livro' => '49019900',
-            'cafe' => '09012100',
-            'alimento' => '19059000',
-            'bebida' => '22021000'
-        ];
-
-        $categoriaLower = strtolower($categoria);
-        foreach ($mapeamento as $key => $ncm) {
-            if (str_contains($categoriaLower, $key)) {
-                return $ncm;
-            }
-        }
-
-        return '49019900'; // Default para livro
+        $uf = '15';
+        $ano = date('y');
+        $mes = date('m');
+        $cnpj = config('nfe.emitente_cnpj', '99999999000191');
+        $modelo = '55';
+        $serie = '001';
+        $numero = str_pad($this->proximoNumeroNota(), 9, '0', STR_PAD_LEFT);
+        $tpEmis = '1';
+        $codigo = str_pad(rand(0, 99999999), 8, '0', STR_PAD_LEFT);
+        
+        $chave = $uf . $ano . $mes . $cnpj . $modelo . $serie . $numero . $tpEmis . $codigo;
+        $chave .= $this->calcularDigitoVerificador($chave);
+        
+        return $chave;
     }
 
-    private function obterCestPorCategoria($categoria)
+    private function calcularDigitoVerificador($chave)
     {
-        $mapeamento = [
-            'livro' => '2800300',
-            'cafe' => '0300800',
-            'alimento' => '0400300',
-            'bebida' => '1100100'
-        ];
-
-        $categoriaLower = strtolower($categoria);
-        foreach ($mapeamento as $key => $cest) {
-            if (str_contains($categoriaLower, $key)) {
-                return $cest;
-            }
+        $pesos = [2, 3, 4, 5, 6, 7, 8, 9];
+        $soma = 0;
+        
+        for ($i = 0; $i < strlen($chave); $i++) {
+            $soma += intval($chave[$i]) * $pesos[$i % count($pesos)];
         }
-
-        return '2800300'; // Default para livro
+        
+        $resto = $soma % 11;
+        return ($resto == 0 || $resto == 1) ? 0 : 11 - $resto;
     }
 }
