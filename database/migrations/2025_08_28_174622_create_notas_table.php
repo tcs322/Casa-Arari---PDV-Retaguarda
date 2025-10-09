@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\TipoProdutoEnum;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -17,6 +18,7 @@ return new class extends Migration
             $table->string('numero_nota')->unique();
             $table->decimal('valor_total');
             $table->foreignUuid('fornecedor_uuid')->references('uuid')->on('fornecedores');
+            $table->enum('tipo_nota', TipoProdutoEnum::getValues())->default(TipoProdutoEnum::LIVRARIA());
             $table->timestamps();
         });
     }

@@ -254,16 +254,35 @@ class NFeIntegrationService
 
     private function gerarImpostosItemComCamposFiscais($produto, $valorTotal)
     {
+        $aliquotaIcms = $produto->aliquota_icms;
+        $cstIcms = $produto->cst_icms;
+        
+        // Estrutura base do ICMS
+        $icms = [
+            'orig' => $produto->origem,
+            'CST' => $cstIcms
+        ];
+
+        // Define a tag e campos específicos baseado no CST
+        $tagIcms = 'ICMS00'; // default
+        
+        if ($cstIcms == '40' || $cstIcms == '41' || $cstIcms == '50') {
+            // Isenta, não tributada ou suspensão
+            $tagIcms = 'ICMS40';
+            $icms['vICMS'] = number_format(0, 2, '.', '');
+            // Não inclui modBC, vBC, pICMS para CST 40
+        } else {
+            // Tributada normal (CST 00, 10, 20, etc.)
+            $tagIcms = 'ICMS00';
+            $icms['modBC'] = '3';
+            $icms['vBC'] = number_format($valorTotal, 2, '.', '');
+            $icms['pICMS'] = number_format($aliquotaIcms, 2, '.', '');
+            $icms['vICMS'] = number_format(($valorTotal * $aliquotaIcms) / 100, 2, '.', '');
+        }
+
         return [
             'ICMS' => [
-                'ICMS00' => [
-                    'orig' => $produto->origem,
-                    'CST' => $produto->cst_icms,
-                    'modBC' => '3',
-                    'vBC' => number_format($valorTotal, 2, '.', ''),
-                    'pICMS' => number_format($produto->aliquota_icms, 2, '.', ''),
-                    'vICMS' => number_format(($valorTotal * $produto->aliquota_icms) / 100, 2, '.', '')
-                ]
+                $tagIcms => $icms
             ],
             'PIS' => [
                 'PISAliq' => [

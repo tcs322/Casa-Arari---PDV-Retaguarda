@@ -23,10 +23,10 @@ return new class extends Migration
             $table->string('autor')->nullable();
             $table->integer('edicao')->nullable();
             $table->enum('tipo', TipoProdutoEnum::getValues())->default(TipoProdutoEnum::LIVRARIA());
-            $table->enum('tipo_producao', TipoProducaoProdutoEnum::getValues())->default(TipoProducaoProdutoEnum::INDUSTRIAL())->nullable();
+            $table->enum('tipo_producao', TipoProducaoProdutoEnum::getValues())->nullable();
             $table->string('nota_uuid')->nullable();
-            $table->foreignUuid('fornecedor_uuid')->references('uuid')->on('fornecedores');
-
+            $table->uuid('fornecedor_uuid')->nullable();
+            $table->foreign('fornecedor_uuid')->references('uuid')->on('fornecedores');
             // Campos fiscais obrigatórios
             $table->string('ncm', 8)->default('49019900');
             $table->string('cest', 7)->nullable();

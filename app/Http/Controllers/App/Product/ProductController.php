@@ -12,12 +12,14 @@ use App\Http\Requests\App\Product\ProductEditRequest;
 use App\Http\Requests\App\Product\ProductShowRequest;
 use App\Http\Requests\App\Product\ProductStoreRequest;
 use App\Http\Requests\App\Product\ProductUpdateRequest;
+use App\Services\Product\ProductTributacaoService;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
     public function __construct(
-        protected ProductAction $action
+        protected ProductAction $action,
+        protected ProductTributacaoService $tributacaoService
     ) {}
 
     public function create()
@@ -42,7 +44,22 @@ class ProductController extends Controller
 
     public function store(ProductStoreRequest $request)
     {
-        $this->action->store(ProductStoreDTO::makeFromRequest($request));
+        // Cria o DTO a partir da request
+        $dto = ProductStoreDTO::makeFromRequest($request);
+        
+        // Aplica tributação automática (retorna um DTO atualizado)
+        $dtoComTributacao = $this->tributacaoService->aplicarTributacaoAutomatica($dto);
+
+        // Opcional: Valida a tributação aplicada
+        $validacao = $this->tributacaoService->validarTributacao($dtoComTributacao);
+        // if (!$validacao['valido']) {
+        //     // Log dos erros (não impede a criação, mas registra para análise)
+        //     \Log::warning('Produto criado com possíveis inconsistências tributárias: ' . 
+        //                  implode(', ', $validacao['erros']));
+        // }
+
+        // Envia o DTO para a Action (mantendo a interface existente)
+        $product = $this->action->store($dtoComTributacao);
 
         return redirect()->route('produto.index');
     }
