@@ -1,32 +1,32 @@
 <x-layouts.tables.simple-table
     :headers="[
-        'Número',
-        'Fornecedor',
+        'Número Nfe',
+        'Forma de Pagamento',
         'Valor total',
-        'Data cadastro',
+        'Data',
         'Opções'
     ]"
-    :paginator="$notas"
+    :paginator="$vendas"
     :appends="$filters"
 >
 @section('table-content')
-    @foreach($notas->items() as $index => $nota)
+    @foreach($vendas->items() as $index => $venda)
         <tr>
-            <td>{{$nota->numero_nota}}</td>
-            <td>{{$nota->fornecedor['nome_fantasia']}}</td>
-            <td>{{$nota->valor_total}}</td>
-            <td>{{$nota->created_at_for_humans}}</td>
+            <td>{{$venda->numero_nota_fiscal}}</td>
+            <td>{{$venda->forma_pagamento}}</td>
+            <td>{{$venda->valor_total}}</td>
+            <td>{{$venda->created_at_for_humans}}</td>
             <td class="text-right">
                 <x-layouts.buttons.action-button
                     text="Ver"
                     action="ver"
                     color="secondary"
-                    :route="route('fornecedor.show', $nota->uuid)"/>
+                    :route="route('venda.show', $venda->uuid)"/>
                 <x-layouts.buttons.action-button
                     text="Editar"
                     action="editar"
                     color="primary"
-                    :route="route('fornecedor.edit', $nota->uuid)"/>
+                    :route="route('fornecedor.edit', $venda->uuid)"/>
             </td>
         </tr>
     @endforeach

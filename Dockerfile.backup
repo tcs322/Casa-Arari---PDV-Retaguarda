@@ -5,31 +5,24 @@ ARG user
 ARG uid
 
 # Install system dependencies
+RUN apt-get update && apt-get install build-essential
 RUN apt-get update && apt-get install -y \
-    build-essential \
     git \
     curl \
     libpng-dev \
     libonig-dev \
     libxml2-dev \
-    libzip-dev \
     zip \
     unzip
+
+# RUN apk add --no-cache openssl bash nodejs npm postgresql-dev
+# RUN docker-php-ext-install bcmath pdo pdo_pgsql soap xls intl
 
 # Clear cache
 RUN apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Install PHP extensions (SEM intl por enquanto)
-RUN docker-php-ext-install \
-    pdo_mysql \
-    mbstring \
-    exif \
-    pcntl \
-    bcmath \
-    gd \
-    sockets \
-    soap \
-    zip
+# Install PHP extensions
+RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd sockets
 
 # Get latest Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
@@ -44,10 +37,8 @@ RUN pecl install -o -f redis \
     &&  rm -rf /tmp/pear \
     &&  docker-php-ext-enable redis
 
-# Install xdebug
 RUN pecl install xdebug \
     && docker-php-ext-enable xdebug
-
 # Set working directory
 WORKDIR /var/www
 

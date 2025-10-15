@@ -28,6 +28,8 @@ use App\Repositories\Produto\ProdutoEloquentRepository;
 use App\Repositories\Produto\ProdutoRepositoryInterface;
 use App\Repositories\Usuario\UsuarioEloquentRepository;
 use App\Repositories\Usuario\UsuarioRepositoryInterface;
+use App\Repositories\Venda\VendaEloquentRepository;
+use App\Repositories\Venda\VendaRepositoryInterface;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\ServiceProvider;
@@ -61,6 +63,9 @@ class AppServiceProvider extends ServiceProvider
         );
         $this->app->bind(
             NotaRepositoryInterface::class, NotaEloquentRepository::class
+        );
+        $this->app->bind(
+            VendaRepositoryInterface::class, VendaEloquentRepository::class
         );
     }
 

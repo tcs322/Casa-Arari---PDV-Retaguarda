@@ -1,24 +1,24 @@
 @extends('app.layouts.app')
 
 @section('breadcrumb')
-    {{ Breadcrumbs::render('nota') }}
+    {{ Breadcrumbs::render('venda') }}
 @endsection
 
-@section('title', 'Notas')
+@section('title', 'Vendas')
 
 @section('content')
 
-<x-layouts.headers.list-header :count="$notas->total()" :title="'Notas'" :route="'nota/create'"/>
+<x-layouts.headers.list-header :count="$vendas->total()" :title="'Vendas'" :route="'venda/create'"/>
 
 @include('components.alerts.form-success')
 
-@include('app.nota.partials.filters', [
-    "notas" => $notas,
+@include('app.venda.partials.filters', [
+    "vendas" => $vendas,
     "filters" => $filters
 ])
 
-@include('app.nota.partials.list', [
-    "notas" => $notas,
+@include('app.venda.partials.list', [
+    "vendas" => $vendas,
     "filters" => $filters
 ])
 

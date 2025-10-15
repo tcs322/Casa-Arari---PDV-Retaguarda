@@ -16,6 +16,7 @@ class Nota extends Model
         'numero_nota',
         'valor_total',
         'fornecedor_uuid',
+        'tipo_nota',
     ];
 
     public function fornecedor()

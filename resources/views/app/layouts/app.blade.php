@@ -196,7 +196,7 @@ MENU PRINCIPAL
                         <a href="{{route('frente-caixa')}}" class="flex items-center w-full p-2 text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700">Nova Venda</a>
                     </li>
                     <li>
-                        <a href="{{route('produto.index')}}" class="flex items-center w-full p-2 text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700">Vendas</a>
+                        <a href="{{route('venda.index')}}" class="flex items-center w-full p-2 text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700">Vendas</a>
                     </li>
                 </ul>
             </li>
@@ -219,6 +219,21 @@ MENU PRINCIPAL
         </div>
     </div>
 </div>
+
+@if(session('success'))
+    <div class="alert alert-success">
+        @if(is_array(session('success')))
+            <div class="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
+                <div class="font-bold">Sucesso!</div>
+                <div>{{ session('success.title') }}</div>
+                <div>{{ session('success.message') }}</div>
+            </div>
+        @else
+            {{ session('success') }}
+        @endif
+        
+    </div>
+@endif
 
 <div data-dial-init class="fixed end-6 bottom-6 group">
     <div id="speed-dial-menu-default" class="flex flex-col items-center hidden mb-4 space-y-2">

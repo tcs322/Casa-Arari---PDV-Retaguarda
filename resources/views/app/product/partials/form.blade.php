@@ -51,6 +51,14 @@
         :data="$formData['tipo']"
         :value="$product->tipo ?? old('tipo')"
     />
+    <x-layouts.inputs.input-normal-select-enum
+        label="Tipo de Produção"
+        name="tipo_producao"
+        origin="tipo_producao"
+        lenght="4/12"
+        :data="$formData['tipo_producao']"
+        :value="$product->tipo_producao ?? old('tipo_producao')"
+    />
 </div>
 <div class="flex flex-wrap -mx-3 mb-2">
     <x-layouts.inputs.input-normal-select

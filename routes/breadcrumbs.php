@@ -221,3 +221,8 @@ Breadcrumbs::for('nota', function (BreadcrumbTrail $trail) {
     $trail->parent('Dashboard' , route('dashboard.index'));
     $trail->push('Nota', route('nota.index'));
 });
+
+Breadcrumbs::for('venda', function (BreadcrumbTrail $trail) {
+    $trail->parent('Dashboard' , route('dashboard.index'));
+    $trail->push('Venda', route('venda.index'));
+});

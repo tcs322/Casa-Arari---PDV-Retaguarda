@@ -6,6 +6,7 @@ use App\DTO\Product\ProductEditDTO;
 use App\DTO\Product\ProductShowDTO;
 use App\DTO\Product\ProductStoreDTO;
 use App\DTO\Product\ProductUpdateDTO;
+use App\Enums\TipoProducaoProdutoEnum;
 use App\Enums\TipoProdutoEnum;
 use App\Models\Product;
 use App\Repositories\Cliente\ClienteRepositoryInterface;
@@ -25,7 +26,8 @@ class ProductAction
     {
         return [
             'fornecedores' => $this->fornecedorRepository->all(),
-            'tipo' => TipoProdutoEnum::asArray()
+            'tipo' => TipoProdutoEnum::asArray(),
+            'tipo_producao' => TipoProducaoProdutoEnum::asArray(),
         ];
     }
 
