@@ -2,6 +2,7 @@
 
 namespace App\Repositories\Cliente;
 
+use App\DTO\Cliente\ClienteStoreDTO;
 use App\Models\Cliente;
 use App\Repositories\Interfaces\PaginationInterface;
 use App\Repositories\Presenters\PaginationPresenter;
@@ -64,5 +65,10 @@ class ClienteEloquentRepository implements ClienteRepositoryInterface
         $query->orderBy('updated_at', 'desc')->get()->toArray();
 
         return $query->get()->toArray();
+    }
+
+    public function store(ClienteStoreDTO $dto): Cliente
+    {
+        return $this->model->create((array) $dto);
     }
 }

@@ -16,14 +16,7 @@ return new class extends Migration
             $table->uuid()->unique();
             $table->string('nome');
             $table->string('cpf_cnpj');
-            $table->string('endereco')->nullable();
-            $table->string('cep')->nullable();
-            $table->string('cidade')->nullable();
-            $table->string('uf')->nullable();
-            $table->string('numero')->nullable();
-            $table->string('complemento')->nullable();
-            $table->string('email');
-            $table->string('site')->nullable();
+            $table->date('data_nascimento');
             $table->timestamps();
         });
     }
