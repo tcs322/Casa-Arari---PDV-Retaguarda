@@ -3,6 +3,7 @@
 namespace App\Repositories\Cliente;
 
 use App\DTO\Cliente\ClienteStoreDTO;
+use App\DTO\Cliente\ClienteUpdateDTO;
 use App\Models\Cliente;
 use App\Repositories\Interfaces\PaginationInterface;
 
@@ -19,4 +20,6 @@ interface ClienteRepositoryInterface
     public function search(string $search): array;
 
     public function store(ClienteStoreDTO $dto): Cliente;
+
+    public function update(ClienteUpdateDTO $dto): Cliente;
 }

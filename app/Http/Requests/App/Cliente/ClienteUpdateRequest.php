@@ -4,7 +4,7 @@ namespace App\Http\Requests\App\Cliente;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class ClienteStoreRequest extends FormRequest
+class ClienteUpdateRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,11 +22,12 @@ class ClienteStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
+            "uuid" => ["uuid", "exists:clientes,uuid"],
             "nome" => [
                 "required", "string", "min:2", "max:254"
             ],
             "cpf" => [
-                "unique:clientes,cpf",
+                "unique:clientes,cpf,$this->cpf,cpf",
                 "required",
                 "string",
                 "size:11",

@@ -1,21 +1,21 @@
 @extends('app.layouts.app')
 
 @section('breadcrumb')
-    {{ Breadcrumbs::render('usuario.edit', $user) }}
+    {{ Breadcrumbs::render('cliente.edit', $cliente) }}
 @endsection
 
-@section('title', 'Edição Usuario')
+@section('title', 'Edição Cliente')
 
-<x-layouts.headers.edit-header :title="$user->uuid.' - '.$user->name"/>
+<x-layouts.headers.edit-header :title="$cliente->uuid.' - '.$cliente->nome"/>
 
 @section('content')
 
 @include('components.alerts.form-errors')
 
-<form action="{{ route('usuario.update', $user->uuid) }}" method="POST">
+<form action="{{ route('cliente.update', $cliente->uuid) }}" method="POST">
     @csrf
     @method('PUT')
-    @include('app.usuario.partials.form')
+    @include('app.cliente.partials.form')
 </form>
 
 @endsection

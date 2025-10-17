@@ -235,3 +235,7 @@ Breadcrumbs::for('cliente.create', function (BreadcrumbTrail $trail) {
     $trail->parent('cliente');
     $trail->push('Novo Cliente', route('cliente.create'));
 });
+Breadcrumbs::for('cliente.edit', function (BreadcrumbTrail $trail, $cliente) {
+    $trail->parent('cliente');
+    $trail->push('Edição de Cliente', route('cliente.edit', $cliente));
+});

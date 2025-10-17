@@ -10,7 +10,7 @@ class Cliente extends Model
 {
     use HasFactory;
 
-    protected $table = 'cliente';
+    protected $table = 'clientes';
 
     protected $fillable = [
         'uuid',

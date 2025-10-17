@@ -3,6 +3,7 @@
 namespace App\Repositories\Cliente;
 
 use App\DTO\Cliente\ClienteStoreDTO;
+use App\DTO\Cliente\ClienteUpdateDTO;
 use App\Models\Cliente;
 use App\Repositories\Interfaces\PaginationInterface;
 use App\Repositories\Presenters\PaginationPresenter;
@@ -70,5 +71,12 @@ class ClienteEloquentRepository implements ClienteRepositoryInterface
     public function store(ClienteStoreDTO $dto): Cliente
     {
         return $this->model->create((array) $dto);
+    }
+
+    public function update(ClienteUpdateDTO $dto): Cliente
+    {
+        $this->model->where('uuid', $dto->uuid)->update((array) $dto);
+
+        return $this->find($dto->uuid);
     }
 }

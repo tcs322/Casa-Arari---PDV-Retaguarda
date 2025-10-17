@@ -1,32 +1,28 @@
 <x-layouts.tables.simple-table
     :headers="[
         'Nome',
-        'E-mail',
-        'Situação',
+        'Data De Nascimento',
         'Opções'
     ]"
-    :paginator="$user"
+    :paginator="$clientes"
     :appends="$filters"
 >
 @section('table-content')
-    @foreach($user->items() as $index => $users)
+    @foreach($clientes->items() as $index => $cliente)
         <tr>
-            <td>{{$users->name}}</td>
-            <td>{{$users->email}}</td>
-            <td><x-layouts.badges.situacao-usuario
-                :situacao="$users->situacao"
-                /></td>
+            <td>{{$cliente->nome}}</td>
+            <td>{{$cliente->data_nascimento}}</td>
             <td class="text-right">
                 <x-layouts.buttons.action-button
                     text="Ver"
                     action="ver"
                     color="secondary"
-                    :route="route('usuario.show', $users->uuid)"/>
+                    :route="route('usuario.show', $cliente->uuid)"/>
                 <x-layouts.buttons.action-button
                     text="Editar"
                     action="editar"
                     color="primary"
-                    :route="route('usuario.edit', $users->uuid)"/>
+                    :route="route('cliente.edit', $cliente->uuid)"/>
             </td>
         </tr>
     @endforeach

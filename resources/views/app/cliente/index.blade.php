@@ -1,24 +1,24 @@
 @extends('app.layouts.app')
 
 @section('breadcrumb')
-    {{ Breadcrumbs::render('usuario') }}
+    {{ Breadcrumbs::render('cliente') }}
 @endsection
 
-@section('title', 'Usuários')
+@section('title', 'Clientes')
 
 @section('content')
 
-<x-layouts.headers.list-header :count="$user->total()" :title="'Usuários'" :route="'usuario/create'"/>
+<x-layouts.headers.list-header :count="$clientes->total()" :title="'Clientes'" :route="'cliente/create'"/>
 
 @include('components.alerts.form-success')
 
-@include('app.usuario.partials.filters', [
-    "users" => $user,
+@include('app.cliente.partials.filters', [
+    "clientes" => $clientes,
     "filters" => $filters
 ])
 
-@include('app.usuario.partials.list', [
-    "users" => $user,
+@include('app.cliente.partials.list', [
+    "clientes" => $clientes,
     "filters" => $filters
 ])
 
