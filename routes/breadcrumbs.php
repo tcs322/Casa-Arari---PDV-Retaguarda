@@ -221,6 +221,10 @@ Breadcrumbs::for('nota', function (BreadcrumbTrail $trail) {
     $trail->parent('Dashboard' , route('dashboard.index'));
     $trail->push('Nota', route('nota.index'));
 });
+Breadcrumbs::for('nota.create-without-xml', function (BreadcrumbTrail $trail) {
+    $trail->parent('nota');
+    $trail->push('Nova NFE', route('nota.create-without-xml'));
+});
 
 Breadcrumbs::for('venda', function (BreadcrumbTrail $trail) {
     $trail->parent('Dashboard' , route('dashboard.index'));

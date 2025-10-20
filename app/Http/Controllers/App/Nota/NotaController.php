@@ -76,4 +76,11 @@ class NotaController extends Controller
     {
         //
     }
+
+    public function createWithoutXml()
+    {
+        $formData = ['tipo_nota' => []];
+
+        return view('app.nota.create-without-xml', compact('formData'));
+    }
 }
