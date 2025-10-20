@@ -25,6 +25,45 @@
             </div>
         @endif
 
+        {{-- Informações do Cliente --}}
+        @if($cliente)
+        <div class="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-lg font-semibold text-blue-800 mb-2">Cliente da Venda</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                        <div>
+                            <span class="font-medium text-blue-700">Nome:</span>
+                            <span class="text-blue-900 ml-2">{{ $cliente['nome'] }}</span>
+                        </div>
+                        <div>
+                            <span class="font-medium text-blue-700">CPF:</span>
+                            <span class="text-blue-900 ml-2">{{ $cliente['cpf'] }}</span>
+                        </div>
+                        <div class="md:col-span-3">
+                            <span class="font-medium text-blue-700">Total de Vendas Anteriores:</span>
+                            <span class="text-green-600 font-semibold ml-2">{{ $cliente['total_vendas'] }} venda(s)</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <span class="inline-block px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                        Cliente Selecionado
+                    </span>
+                </div>
+            </div>
+        </div>
+        @else
+        <div class="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div class="flex items-center">
+                <svg class="w-5 h-5 text-yellow-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+                <span class="text-yellow-700 font-medium">Venda sem cliente específico</span>
+            </div>
+        </div>
+        @endif
+
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {{-- Resumo da Venda --}}
             <div class="lg:col-span-1">
@@ -218,7 +257,13 @@
                             wire:loading.class="opacity-50 cursor-not-allowed"
                             class="w-full py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 font-semibold mt-2 transition duration-200 flex items-center justify-center"
                         >
-                            <span wire:loading.remove>Processar Pagamento</span>
+                            <span wire:loading.remove>
+                                @if($cliente)
+                                    Finalizar Venda para {{ $cliente['nome'] }}
+                                @else
+                                    Finalizar Venda
+                                @endif
+                            </span>
                             <span wire:loading>
                                 <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>

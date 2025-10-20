@@ -17,7 +17,7 @@
                     text="Ver"
                     action="ver"
                     color="secondary"
-                    :route="route('usuario.show', $cliente->uuid)"/>
+                    :route="route('cliente.show', $cliente->uuid)"/>
                 <x-layouts.buttons.action-button
                     text="Editar"
                     action="editar"

@@ -19,6 +19,7 @@ class FrenteCaixaPagamento extends Component
     public $total = 0;
     public $descontoGeral = 0;
     public $tipoDescontoGeral = 'percentual';
+    public $cliente = null; // Agora obrigatório
     public $ehCartao = false;
     public $ehDinheiro = false;
     
@@ -38,10 +39,17 @@ class FrenteCaixaPagamento extends Component
             return redirect()->route('frente-caixa');
         }
 
+        // Valida se há cliente selecionado
+        if (!isset($vendaDados['cliente']) || !$vendaDados['cliente']) {
+            session()->flash('error', 'Cliente não selecionado. Por favor, selecione um cliente antes de finalizar a venda.');
+            return redirect()->route('frente-caixa');
+        }
+
         $this->carrinho = $vendaDados['carrinho'];
         $this->total = $vendaDados['total'];
         $this->descontoGeral = $vendaDados['desconto_geral'];
         $this->tipoDescontoGeral = $vendaDados['tipo_desconto_geral'];
+        $this->cliente = $vendaDados['cliente']; // Agora obrigatório
     }
 
     public function updatedFormaPagamento($value)
@@ -82,6 +90,15 @@ class FrenteCaixaPagamento extends Component
 
     public function processarPagamento()
     {
+        // Validação reforçada para garantir que o cliente está presente
+        if (!$this->cliente || !isset($this->cliente['uuid'])) {
+            session()->flash('error', [
+                'title' => 'Erro de validação',
+                'message' => 'Cliente não selecionado. Por favor, volte e selecione um cliente.'
+            ]);
+            return;
+        }
+
         $this->validate([
             'formaPagamento' => 'required|in:' . implode(',', FormaPagamentoEnum::getValues()),
         ]);
@@ -102,17 +119,18 @@ class FrenteCaixaPagamento extends Component
         DB::beginTransaction();
 
         try {
-            // Cria a venda primeiro (sem número da nota ainda)
+            // Cria a venda com o cliente_uuid (agora obrigatório)
             $venda = Venda::create([
                 'uuid' => Str::uuid(),
                 'usuario_uuid' => Auth::user()->uuid,
+                'cliente_uuid' => $this->cliente['uuid'], // Agora obrigatório
                 'forma_pagamento' => $this->formaPagamento,
                 'bandeira_cartao' => $this->ehCartao ? $this->bandeiraCartao : null,
                 'quantidade_parcelas' => $this->ehCartao ? $this->parcelas : null,
                 'valor_total' => $this->total,
                 'valor_recebido' => $this->ehDinheiro ? $this->valorRecebido : $this->total,
                 'troco' => $this->ehDinheiro ? $this->troco : 0,
-                'numero_nota_fiscal' => null, // Será preenchido após NF-e
+                'numero_nota_fiscal' => null,
                 'status' => 'finalizada',
                 'observacoes' => $this->observacoes,
                 'data_venda' => now(),
@@ -155,11 +173,13 @@ class FrenteCaixaPagamento extends Component
 
                 session()->forget('venda_dados');
                 
+                $mensagemSucesso = 'Venda finalizada com sucesso! | Cliente: ' . $this->cliente['nome'] . 
+                                  ' | Nº da Venda: ' . $venda->uuid . 
+                                  ' | NFE: ' . $resultadoNFe['numero_nota'];
+                
                 session()->flash('success', [
                     'title' => 'Venda finalizada com sucesso!',
-                    'message' => 'Nº da Venda: ' . $venda->uuid . 
-                            ' | NFE: ' . $resultadoNFe['numero_nota'] .
-                            ' | Chave: ' . $resultadoNFe['chave_acesso']
+                    'message' => $mensagemSucesso
                 ]);
                 
                 return redirect()->route('dashboard.index');
@@ -173,11 +193,14 @@ class FrenteCaixaPagamento extends Component
 
                 DB::commit();
 
+                $mensagemWarning = 'Venda finalizada, mas NF-e pendente | Cliente: ' . $this->cliente['nome'] . 
+                                  ' | Venda: ' . $venda->uuid . 
+                                  ' | Erro NF-e: ' . $resultadoNFe['mensagem'] .
+                                  ' | Contate o suporte.';
+                
                 session()->flash('warning', [
                     'title' => 'Venda finalizada, mas NF-e pendente',
-                    'message' => 'Venda: ' . $venda->uuid . 
-                            ' | Erro NF-e: ' . $resultadoNFe['mensagem'] .
-                            ' | Contate o suporte.'
+                    'message' => $mensagemWarning
                 ]);
                 
                 return redirect()->route('dashboard.index');
@@ -193,32 +216,6 @@ class FrenteCaixaPagamento extends Component
             
             return back();
         }
-    }
-
-    /**
-     * Gera um número fictício para a nota fiscal
-     * Substitua por integração real com SEFAZ posteriormente
-     */
-    protected function gerarNumeroNotaFiscal()
-    {
-        // TODO: Integrar com API SEFAZ aqui
-        // Por enquanto, gera um número fictício
-        return 'NFE' . now()->format('YmdHis') . rand(1000, 9999);
-    }
-
-    /**
-     * Simula o processamento da nota fiscal na SEFAZ
-     */
-    protected function processarNotaFiscal($vendaData)
-    {
-        // TODO: Implementar integração real com SEFAZ
-        // Por enquanto, retorna sucesso simulado
-        return [
-            'success' => true,
-            'numero_nota' => 'NFE' . now()->format('YmdHis') . rand(1000, 9999),
-            'chave_acesso' => strtoupper(Str::random(44)),
-            'mensagem' => 'Nota fiscal autorizada com sucesso'
-        ];
     }
 
     public function voltarParaCarrinho()

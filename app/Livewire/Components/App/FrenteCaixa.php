@@ -3,12 +3,16 @@
 namespace App\Livewire\Components\App;
 
 use App\Models\Product;
+use App\Models\Cliente;
 use Livewire\Component;
 
 class FrenteCaixa extends Component
 {
     public $search = '';
+    public $searchCliente = '';
     public $produtosEncontrados = [];
+    public $clientesEncontrados = [];
+    public $clienteSelecionado = null;
     public $carrinho = [];
     public $totalCarrinho = 0;
     public $descontoGeral = 0;
@@ -26,6 +30,41 @@ class FrenteCaixa extends Component
             ->limit(10)
             ->get()
             ->toArray();
+    }
+
+    public function buscarClientes()
+    {
+        if (strlen($this->searchCliente) < 2) {
+            $this->clientesEncontrados = [];
+            return;
+        }
+
+        $this->clientesEncontrados = Cliente::where('nome', 'like', '%' . $this->searchCliente . '%')
+            ->orWhere('cpf', 'like', '%' . $this->searchCliente . '%')
+            ->limit(10)
+            ->get()
+            ->map(function ($cliente) {
+                return [
+                    'uuid' => $cliente->uuid,
+                    'nome' => $cliente->nome,
+                    'cpf' => $cliente->cpf,
+                    'total_vendas' => $cliente->contarVendas()
+                ];
+            })
+            ->toArray();
+    }
+
+    public function selecionarCliente($clienteData)
+    {
+        $this->clienteSelecionado = $clienteData;
+        $this->searchCliente = '';
+        $this->clientesEncontrados = [];
+    }
+
+    public function removerCliente()
+    {
+        $this->clienteSelecionado = null;
+        $this->searchCliente = '';
     }
 
     public function adicionarAoCarrinho($produtoId)
@@ -97,22 +136,15 @@ class FrenteCaixa extends Component
 
     public function limparCarrinho()
     {
-        // Limpa o carrinho atual
         $this->carrinho = [];
-        
-        // Zera os totais e descontos
         $this->totalCarrinho = 0;
         $this->descontoGeral = 0;
         $this->tipoDescontoGeral = 'percentual';
         
-        // Limpa os dados da sessão se estiver usando
         session()->forget('venda_dados');
         session()->forget('carrinho');
         
-        // Opcional: Feedback para o usuário
         session()->flash('message', 'Carrinho limpo com sucesso!');
-        
-        // Se quiser emitir um evento para o JavaScript
         $this->dispatch('carrinho-limpo');
     }
 
@@ -153,12 +185,19 @@ class FrenteCaixa extends Component
             return;
         }
 
+        // Valida se há cliente selecionado
+        if (!$this->clienteSelecionado) {
+            session()->flash('error', 'Selecione um cliente antes de finalizar a venda!');
+            return;
+        }
+
         // Salva os dados da venda na sessão para passar para a próxima página
         session()->put('venda_dados', [
             'carrinho' => $this->carrinho,
             'total' => $this->totalCarrinho,
             'desconto_geral' => $this->descontoGeral,
-            'tipo_desconto_geral' => $this->tipoDescontoGeral
+            'tipo_desconto_geral' => $this->tipoDescontoGeral,
+            'cliente' => $this->clienteSelecionado // Agora obrigatório
         ]);
 
         // Redireciona para a página de pagamento

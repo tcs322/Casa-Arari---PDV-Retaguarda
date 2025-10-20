@@ -29,7 +29,9 @@ class ClienteEloquentRepository implements ClienteRepositoryInterface
     public function find(string $uuid): Cliente
     {
         return $this->model
-            ->where('uuid', $uuid)->firstOrFail();
+            ->with('vendas')
+            ->where('uuid', $uuid)
+            ->firstOrFail();
     }
 
     public function paginate(int $page = 1, int $totalPerPage = 10, string $filter = null): PaginationInterface
@@ -38,7 +40,7 @@ class ClienteEloquentRepository implements ClienteRepositoryInterface
 
         if(!is_null($filter)) {
             $query->where("nome", "like", "%".$filter."%");
-            $query->orWhere("cpf_cnpj", "like", "%".$filter."%");
+            $query->orWhere("cpf", "like", "%".$filter."%");
         }
 
         $query->orderBy('updated_at', 'desc');

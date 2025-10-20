@@ -23,4 +23,9 @@ class Cliente extends Model
     {
         return $this->hasMany(Venda::class, 'cliente_uuid', 'uuid');
     }
+
+    public function contarVendas(): int
+    {
+        return $this->vendas()->count();
+    }
 }

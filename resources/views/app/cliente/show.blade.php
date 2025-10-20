@@ -1,9 +1,9 @@
 @extends('app.layouts.app')
 
-@section('title', 'Usuario {{$user->name}}')
+@section('title', 'Cliente {{$cliente->nome}}')
 
 @section('content')
 
-@dd($user)
+@dd($cliente)
 
 @endsection

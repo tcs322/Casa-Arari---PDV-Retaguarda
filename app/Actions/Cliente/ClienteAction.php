@@ -3,6 +3,7 @@
 namespace App\Actions\Cliente;
 
 use App\DTO\Cliente\ClienteEditDTO;
+use App\DTO\Cliente\ClienteShowDTO;
 use App\DTO\Cliente\ClienteStoreDTO;
 use App\DTO\Cliente\ClienteUpdateDTO;
 use App\Models\Cliente;
@@ -33,5 +34,10 @@ class ClienteAction
     public function update(ClienteUpdateDTO $dto): Cliente
     {
         return $this->repository->update($dto);
+    }
+
+    public function show(ClienteShowDTO $dto): Cliente
+    {
+        return $this->repository->find($dto->uuid);
     }
 }

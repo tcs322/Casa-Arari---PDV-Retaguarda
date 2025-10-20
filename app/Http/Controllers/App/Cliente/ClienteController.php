@@ -4,6 +4,7 @@ namespace App\Http\Controllers\App\Cliente;
 
 use App\Actions\Cliente\ClienteAction;
 use App\DTO\Cliente\ClienteEditDTO;
+use App\DTO\Cliente\ClienteShowDTO;
 use App\DTO\Cliente\ClienteStoreDTO;
 use App\DTO\Cliente\ClienteUpdateDTO;
 use App\Http\Requests\App\Cliente\ClienteStoreRequest;
@@ -64,5 +65,18 @@ class ClienteController
         $this->action->update(ClienteUpdateDTO::makeFromRequest($request));
 
         return redirect()->route('cliente.index')->with('message', 'Registro Atualizado');
+    }
+
+    public function show(string $uuid, Request $request)
+    {
+        $request->merge([
+            "uuid" => $uuid
+        ]);
+
+        $cliente = $this->action->show(ClienteShowDTO::makeFromRequest($request));
+
+        return view('app.cliente.show', [
+            "cliente" => $cliente,
+        ]);
     }
 }
