@@ -14,7 +14,7 @@ class FornecedorEditController extends Controller
         protected FornecedorEditAction $storeAction
     ) { }
 
-    public function Edit(string $uuid, FornecedorEditRequest $storeRequest)
+    public function edit(string $uuid, FornecedorEditRequest $storeRequest)
     {
         $storeRequest->merge([
             "uuid" => $uuid

@@ -16,6 +16,7 @@ class Venda extends Model
     protected $fillable = [
         'uuid',
         'usuario_uuid',
+        'cliente_uuid',
         'forma_pagamento',
         'bandeira_cartao',
         'quantidade_parcelas',
@@ -48,6 +49,11 @@ class Venda extends Model
     public function usuario()
     {
         return $this->belongsTo(User::class, 'usuario_uuid', 'uuid');
+    }
+
+    public function cliente()
+    {
+        return $this->belongsTo(Cliente::class, 'cliente_uuid', 'uuid');
     }
 
     // Escopos úteis

@@ -2,6 +2,8 @@
 
 namespace App\Repositories\Cliente;
 
+use App\DTO\Cliente\ClienteStoreDTO;
+use App\DTO\Cliente\ClienteUpdateDTO;
 use App\Models\Cliente;
 use App\Repositories\Interfaces\PaginationInterface;
 use App\Repositories\Presenters\PaginationPresenter;
@@ -27,7 +29,9 @@ class ClienteEloquentRepository implements ClienteRepositoryInterface
     public function find(string $uuid): Cliente
     {
         return $this->model
-            ->where('uuid', $uuid)->firstOrFail();
+            ->with('vendas')
+            ->where('uuid', $uuid)
+            ->firstOrFail();
     }
 
     public function paginate(int $page = 1, int $totalPerPage = 10, string $filter = null): PaginationInterface
@@ -36,7 +40,7 @@ class ClienteEloquentRepository implements ClienteRepositoryInterface
 
         if(!is_null($filter)) {
             $query->where("nome", "like", "%".$filter."%");
-            $query->orWhere("cpf_cnpj", "like", "%".$filter."%");
+            $query->orWhere("cpf", "like", "%".$filter."%");
         }
 
         $query->orderBy('updated_at', 'desc');
@@ -64,5 +68,17 @@ class ClienteEloquentRepository implements ClienteRepositoryInterface
         $query->orderBy('updated_at', 'desc')->get()->toArray();
 
         return $query->get()->toArray();
+    }
+
+    public function store(ClienteStoreDTO $dto): Cliente
+    {
+        return $this->model->create((array) $dto);
+    }
+
+    public function update(ClienteUpdateDTO $dto): Cliente
+    {
+        $this->model->where('uuid', $dto->uuid)->update((array) $dto);
+
+        return $this->find($dto->uuid);
     }
 }

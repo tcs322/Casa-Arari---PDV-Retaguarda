@@ -2,11 +2,13 @@
 
 namespace App\Providers;
 
+use App\Models\Cliente;
 use App\Models\Fornecedor;
 use App\Models\Nota;
 use App\Models\Product;
 use App\Models\Produto;
 use App\Models\User;
+use App\Observers\ClienteObserver;
 use App\Observers\FornecedorObserver;
 use App\Observers\NotaObserver;
 use App\Observers\ProductObserver;
@@ -75,6 +77,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Cliente::observe(ClienteObserver::class);
         Fornecedor::observe(FornecedorObserver::class);
         User::observe(UsuarioObserver::class);
         Produto::observe(ProdutoObserver::class);

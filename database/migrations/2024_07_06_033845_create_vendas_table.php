@@ -17,6 +17,7 @@ return new class extends Migration
             $table->id();
             $table->uuid('uuid')->unique();
             $table->foreignUuid('usuario_uuid')->references('uuid')->on('users');
+            $table->foreignUuid('cliente_uuid')->references('uuid')->on('clientes');
             $table->enum('forma_pagamento', FormaPagamentoEnum::getValues());
             $table->enum('bandeira_cartao', BandeiraCartaoEnum::getValues())->nullable();
             $table->integer('quantidade_parcelas')->nullable();

@@ -4,24 +4,28 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Cliente extends Model
 {
     use HasFactory;
 
-    protected $table = 'cliente';
+    protected $table = 'clientes';
 
     protected $fillable = [
         'uuid',
         'nome',
-        'cpf_cnpj',
-        'endereco',
-        'cep',
-        'cidade',
-        'uf',
-        'numero',
-        'complemento',
-        'email',
-        'site',
+        'cpf',
+        'data_nascimento',
     ];
+
+    public function vendas(): HasMany
+    {
+        return $this->hasMany(Venda::class, 'cliente_uuid', 'uuid');
+    }
+
+    public function contarVendas(): int
+    {
+        return $this->vendas()->count();
+    }
 }
