@@ -8,7 +8,7 @@
 
 @section('content')
 
-<x-layouts.headers.list-header :count="$notas->total()" :title="'Notas'" :route="'nota/create'"/>
+<x-layouts.headers.list-header :count="$notas->total()" :title="'Notas'" :route="'nota/create-without-xml'"/>
 
 @include('components.alerts.form-success')
 

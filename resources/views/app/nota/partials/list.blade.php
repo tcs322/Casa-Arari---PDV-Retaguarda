@@ -21,7 +21,7 @@
                     text="Ver"
                     action="ver"
                     color="secondary"
-                    :route="route('fornecedor.show', $nota->uuid)"/>
+                    :route="route('nota.show', $nota->uuid)"/>
                 <x-layouts.buttons.action-button
                     text="Editar"
                     action="editar"

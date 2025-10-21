@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\App\Nota;
 
 use App\Actions\Nota\NotaAction;
+use App\DTO\Nota\NotaStoreDTO;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\App\Nota\NotaStoreRequest;
 use App\Models\Nota;
 use Illuminate\Http\Request;
 
@@ -40,17 +42,21 @@ class NotaController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(NotaStoreRequest $request)
     {
-        //
+        $this->action->store(NotaStoreDTO::makeFromRequest($request));
+
+        return redirect()->route('nota.index')->with('message', 'Registro Criado.');
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(Nota $nota)
+    public function show(string $uuid, Request $request)
     {
-        //
+        $nota = $this->action->show($uuid);
+
+        return view('app.nota.show', ["nota" => $nota]);
     }
 
     /**
@@ -79,7 +85,7 @@ class NotaController extends Controller
 
     public function createWithoutXml()
     {
-        $formData = ['tipo_nota' => []];
+        $formData = $this->action->create();
 
         return view('app.nota.create-without-xml', compact('formData'));
     }
