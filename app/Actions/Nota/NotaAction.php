@@ -2,7 +2,9 @@
 
 namespace App\Actions\Nota;
 
+use App\DTO\Nota\NotaEditDTO;
 use App\DTO\Nota\NotaStoreDTO;
+use App\DTO\Nota\NotaUpdateDTO;
 use App\Enums\TipoProdutoEnum;
 use App\Models\Nota;
 use App\Repositories\Fornecedor\FornecedorRepositoryInterface;
@@ -38,5 +40,15 @@ class NotaAction{
     public function show(string $uuid): Nota
     {
         return $this->notaRepository->find($uuid);
+    }
+
+    public function edit(NotaEditDTO $dto): Nota
+    {
+        return $this->notaRepository->find($dto->uuid);
+    }
+
+    public function update(NotaUpdateDTO $dto): Nota
+    {
+        return $this->notaRepository->update($dto);
     }
 }

@@ -26,7 +26,7 @@
                     text="Editar"
                     action="editar"
                     color="primary"
-                    :route="route('fornecedor.edit', $nota->uuid)"/>
+                    :route="route('nota.edit', $nota->uuid)"/>
             </td>
         </tr>
     @endforeach

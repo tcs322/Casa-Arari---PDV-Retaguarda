@@ -3,9 +3,13 @@
 namespace App\Http\Controllers\App\Nota;
 
 use App\Actions\Nota\NotaAction;
+use App\DTO\Nota\NotaEditDTO;
 use App\DTO\Nota\NotaStoreDTO;
+use App\DTO\Nota\NotaUpdateDTO;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\App\Nota\NotaEditRequest;
 use App\Http\Requests\App\Nota\NotaStoreRequest;
+use App\Http\Requests\App\Nota\NotaUpdateRequest;
 use App\Models\Nota;
 use Illuminate\Http\Request;
 
@@ -62,17 +66,31 @@ class NotaController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Nota $nota)
+    public function edit(string $uuid, NotaEditRequest $request)
     {
-        //
+        $request->merge([
+            'uuid' => $uuid
+        ]);
+
+        $formData = $this->action->create();
+
+        $nota = $this->action->edit(NotaEditDTO::makeFromRequest($request));
+
+        return view('app.nota.edit', [
+            "nota" => $nota,
+            "formData" => $formData
+        ]);
+
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Nota $nota)
+    public function update(NotaUpdateRequest $request)
     {
-        //
+        $this->action->update(NotaUpdateDTO::makeFromRequest($request));
+
+        return redirect()->route('nota.index')->with('message', 'Registro Atualizado.');
     }
 
     /**

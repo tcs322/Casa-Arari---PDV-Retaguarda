@@ -6,7 +6,7 @@ use App\Enums\TipoProdutoEnum;
 use BenSampo\Enum\Rules\EnumKey;
 use Illuminate\Foundation\Http\FormRequest;
 
-class NotaStoreRequest extends FormRequest
+class NotaUpdateRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -24,8 +24,9 @@ class NotaStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
+            "uuid" => ["uuid", "exists:notas,uuid"],
             "numero_nota" => [
-                "required", "string", "unique:notas,numero_nota"
+                "required", "string", "unique:notas,numero_nota,$this->numero_nota,numero_nota"
             ],
             "valor_total"  => [
                 "required", "decimal:0,2", "min:0"

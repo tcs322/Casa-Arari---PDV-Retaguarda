@@ -11,18 +11,18 @@ use App\Http\Requests\App\Fornecedor\FornecedorEditRequest;
 class FornecedorEditController extends Controller
 {
     public function __construct(
-        protected FornecedorEditAction $storeAction
+        protected FornecedorEditAction $editAction
     ) { }
 
-    public function edit(string $uuid, FornecedorEditRequest $storeRequest)
+    public function edit(string $uuid, FornecedorEditRequest $editRequest)
     {
-        $storeRequest->merge([
+        $editRequest->merge([
             "uuid" => $uuid
         ]);
 
         $formData = (new FornecedorCreateAction())->exec();
 
-        $fornecedor = $this->storeAction->exec(FornecedorEditDTO::makeFromRequest($storeRequest));
+        $fornecedor = $this->editAction->exec(FornecedorEditDTO::makeFromRequest($editRequest));
 
         return view('app.fornecedor.edit', [
             "fornecedor" => $fornecedor,
