@@ -21,12 +21,12 @@
                     text="Ver"
                     action="ver"
                     color="secondary"
-                    :route="route('fornecedor.show', $nota->uuid)"/>
+                    :route="route('nota.show', $nota->uuid)"/>
                 <x-layouts.buttons.action-button
                     text="Editar"
                     action="editar"
                     color="primary"
-                    :route="route('fornecedor.edit', $nota->uuid)"/>
+                    :route="route('nota.edit', $nota->uuid)"/>
             </td>
         </tr>
     @endforeach

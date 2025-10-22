@@ -2,6 +2,8 @@
 
 namespace App\Repositories\Nota;
 
+use App\DTO\Nota\NotaStoreDTO;
+use App\DTO\Nota\NotaUpdateDTO;
 use App\DTO\Product\ProductStoreDTO;
 use App\DTO\Product\ProductUpdateDTO;
 use App\Models\Nota;
@@ -40,17 +42,17 @@ class NotaEloquentRepository implements NotaRepositoryInterface
 
     }
 
-    public function store(ProductStoreDTO $dto): Product
+    public function store(NotaStoreDTO $dto): Nota
     {
         return $this->model->create((array) $dto);
     }
 
-    public function find(string $uuid): Product
+    public function find(string $uuid): Nota
     {
         return $this->model->with('fornecedor')->where("uuid", $uuid)->first();
     }
 
-    public function update(ProductUpdateDTO $dto): Product
+    public function update(NotaUpdateDTO $dto): Nota
     {
         $this->model->where("uuid", $dto->uuid)->update((array)$dto);
 

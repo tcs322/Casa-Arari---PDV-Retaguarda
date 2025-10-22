@@ -1,68 +1,34 @@
 @csrf
 <div class="flex flex-wrap -mx-3 mb-2">
     <x-layouts.inputs.input-normal-text
-        label="Razão social"
-        name="razao_social"
+        label="Número NFE"
+        name="numero_nota"
         lenght="6/12"
-        :value="$fornecedor->razao_social ?? old('razao_social')"
+        :value="$nota->numero_nota ?? old('numero_nota')"
     />
     <x-layouts.inputs.input-normal-text
-        label="Nome fantasia"
-        name="nome_fantasia"
+        label="Valor Total"
+        name="valor_total"
         lenght="6/12"
-        :value="$fornecedor->nome_fantasia ?? old('nome_fantasia')"
+        :value="$nota->valor_total ?? old('valor_total')"
     />
 </div>
 <div class="flex flex-wrap -mx-3 mb-2">
     <x-layouts.inputs.input-normal-select-enum
-        label="Tipo de fornecedor"
-        name="tipo"
-        origin="tipo"
+        label="Tipo de Nota"
+        name="tipo_nota"
+        origin="tipo_nota"
         lenght="4/12"
-        :data="$formData['tipo']"
-        :value="$fornecedor->tipo ?? old('tipo')"
+        :data="$formData['tipo_nota']"
+        :value="$nota->tipo_nota ?? old('tipo_nota')"
     />
-    <x-layouts.inputs.input-normal-select-enum
-        label="Tipo Documento"
-        name="tipo_documento"
-        origin="tipo_documento"
-        lenght="4/12"
-        :data="$formData['tipo_documento']"
-        :value="$fornecedor->tipo_documento ?? old('tipo_documento')"
-    />
-    <x-layouts.inputs.input-normal-text
-        label="Documento"
-        name="documento"
-        lenght="4/12"
-        :value="$fornecedor->documento ?? old('documento')"
-    />
-</div>
-<div class="flex flex-wrap -mx-3 mb-2">
-    <x-layouts.inputs.input-normal-text
-        label="Endereço"
-        name="endereco"
-        lenght="6/12"
-        :value="$fornecedor->endereco ?? old('endereco')"
-    />
-    <x-layouts.inputs.input-normal-text
-        label="Cidade"
-        name="cidade"
-        lenght="6/12"
-        :value="$fornecedor->cidade ?? old('cidade')"
-    />
-</div>
-<div class="flex flex-wrap -mx-3 mb-2">
-    <x-layouts.inputs.input-normal-text
-        label="UF"
-        name="uf"
-        lenght="3/12"
-        :value="$fornecedor->uf ?? old('uf')"
-    />
-    <x-layouts.inputs.input-normal-text
-        label="Número"
-        name="numero"
-        lenght="3/12"
-        :value="$fornecedor->numero ?? old('numero')"
+    <x-layouts.inputs.input-normal-select
+        :data="$formData['fornecedores']"
+        label="Fornecedor/Editora"
+        name="fornecedor_uuid"
+        lenght="8/12"
+        labelKey="razao_social"
+        :value="$nota->fornecedor_uuid ?? old('fornecedor_uuid')"
     />
 </div>
 
