@@ -31,7 +31,7 @@ class NFeAssinaturaService
     }
 
     /**
-     * Configurações para SEFAZ
+     * Configurações para SEFA
      */
     private function getConfig(): array
     {

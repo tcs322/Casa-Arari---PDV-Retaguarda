@@ -17,6 +17,7 @@ class VendaItem extends Model
         'produto_uuid',
         'quantidade',
         'preco_unitario',
+        'preco_total',
         'subtotal',
         'desconto',
         'tipo_desconto'

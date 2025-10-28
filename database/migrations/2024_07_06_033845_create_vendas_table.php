@@ -23,18 +23,27 @@ return new class extends Migration
             $table->integer('quantidade_parcelas')->nullable();
             $table->decimal('valor_total', 10, 2);
             
-            // Novos campos adicionados
+            // Campos de pagamento
             $table->decimal('valor_recebido', 10, 2)->default(0);
             $table->decimal('troco', 10, 2)->default(0);
+            
+            // Campos de numeração NF-e
             $table->string('numero_nota_fiscal')->nullable();
+            $table->string('serie_nfe')->nullable();
+            
+            // Status da venda
             $table->enum('status', ['pendente', 'finalizada', 'cancelada'])->default('pendente');
             $table->text('observacoes')->nullable();
             $table->timestamp('data_venda')->useCurrent();
 
-            $table->string('chave_acesso_nfe', 44)->nullable();
-            $table->text('xml_nfe')->nullable();
-            $table->string('status_nfe')->default('pendente');
-            $table->text('erro_nfe')->nullable();
+            // ✅ CAMPOS NF-e COMPLETOS E CORRETOS
+            $table->string('chave_acesso_nfe', 44)->nullable()->comment('Chave de acesso da NF-e (44 dígitos)');
+            $table->string('protocolo_nfe', 50)->nullable()->comment('Número do protocolo de autorização');
+            $table->timestamp('data_autorizacao_nfe')->nullable()->comment('Data/hora da autorização');
+            $table->text('xml_nfe')->nullable()->comment('XML original enviado');
+            $table->text('xml_autorizado')->nullable()->comment('XML autorizado com protocolo');
+            $table->enum('status_nfe', ['pendente', 'autorizada', 'rejeitada', 'cancelada', 'erro'])->default('pendente');
+            $table->text('erro_nfe')->nullable()->comment('Mensagem de erro em caso de rejeição');
             
             $table->timestamps();
         });
@@ -45,6 +54,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('venda');
+        Schema::dropIfExists('vendas');
     }
 };
