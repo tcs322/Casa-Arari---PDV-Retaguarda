@@ -24,11 +24,15 @@ class Venda extends Model
         'valor_recebido',
         'troco',
         'numero_nota_fiscal',
+        'serie_nfe',
         'status',
         'observacoes',
         'data_venda',
         'chave_acesso_nfe',
-        'xml_nfe', 
+        'protocolo_nfe',
+        'data_autorizacao_nfe',
+        'xml_nfe',
+        'xml_autorizado',
         'status_nfe',
         'erro_nfe'
     ];

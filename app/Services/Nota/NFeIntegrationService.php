@@ -57,7 +57,7 @@ class NFeIntegrationService
     /**
      * GERA XML COMPLETO DA NF-E (MÉTODO CORRIGIDO)
      */
-    private function gerarXmlNFe(Venda $venda)
+    public function gerarXmlNFe(Venda $venda)
     {
         $chave = $this->gerarChaveAcessoSimulada();
         

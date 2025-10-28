@@ -7,14 +7,21 @@ use App\Enums\BandeiraCartaoEnum;
 use App\Models\Venda;
 use App\Models\VendaItem;
 use App\Models\Product;
+use App\Services\Nota\NFeGenerateService;
 use App\Services\Nota\NFeIntegrationService;
+use App\Services\Nota\NFeService;
+use App\Traits\Nota\NFeGenerateNumber;
+use App\Traits\Nota\NFeGenerateSerie;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Livewire\Component;
 
 class FrenteCaixaPagamento extends Component
 {
+    // use NFeGenerateSerie, NFeGenerateNumber;
+
     public $carrinho = [];
     public $total = 0;
     public $descontoGeral = 0;
@@ -30,6 +37,7 @@ class FrenteCaixaPagamento extends Component
     public $troco = 0;
     public $parcelas = 1;
     public $valorParcela = 0;
+
 
     public function mount()
     {
@@ -130,7 +138,8 @@ class FrenteCaixaPagamento extends Component
                 'valor_total' => $this->total,
                 'valor_recebido' => $this->ehDinheiro ? $this->valorRecebido : $this->total,
                 'troco' => $this->ehDinheiro ? $this->troco : 0,
-                'numero_nota_fiscal' => null,
+                'numero_nota_fiscal' => $this->proximoNumeroNota(),
+                'serie_nfe' => $this->seriePadrao(),
                 'status' => 'finalizada',
                 'observacoes' => $this->observacoes,
                 'data_venda' => now(),
@@ -138,12 +147,16 @@ class FrenteCaixaPagamento extends Component
 
             // Cria os itens da venda
             foreach ($this->carrinho as $item) {
+                $valor_total = $item['preco'] * $item['quantidade'];
+                $valor_total_formatado = number_format($valor_total, 2, '.');
+
                 VendaItem::create([
                     'uuid' => Str::uuid(),
                     'venda_uuid' => $venda->uuid,
                     'produto_uuid' => $item['uuid'],
                     'quantidade' => $item['quantidade'],
                     'preco_unitario' => $item['preco'],
+                    'preco_total' => $valor_total_formatado,
                     'subtotal' => $item['subtotal'],
                     'desconto' => $item['desconto'] ?? 0,
                     'tipo_desconto' => $item['tipo_desconto'] ?? 'percentual'
@@ -156,46 +169,41 @@ class FrenteCaixaPagamento extends Component
                 }
             }
 
-            // ✅ AGORA EMITE A NF-e APÓS CRIAR A VENDA
-            $nfeService = new NFeIntegrationService();
-            $resultadoNFe = $nfeService->emitirNFe($venda);
+            Log::info("✅ Venda criada: {$venda->uuid}");
 
-            if ($resultadoNFe['success']) {
-                // Atualiza a venda com os dados da NF-e
-                $venda->update([
-                    'numero_nota_fiscal' => $resultadoNFe['numero_nota'],
-                    'chave_acesso_nfe' => $resultadoNFe['chave_acesso'],
-                    'xml_nfe' => $resultadoNFe['xml'],
-                    'status_nfe' => 'autorizada'
-                ]);
-
+            // 2. Processar NF-e com NFeGenerateService
+            $nfeService = new NFeGenerateService(); // ← Seu service atual
+            $resultado = $nfeService->emitirNFe($venda);
+            Log::info("📋 Resultado NF-e:", $resultado);
+        
+            if ($resultado['success']) {
+                // ✅ A venda JÁ foi atualizada pelo emitirNFe() - apenas commit
                 DB::commit();
-
+                Log::info("🎯 NF-e AUTORIZADA - Commit realizado");
+        
                 session()->forget('venda_dados');
                 
                 $mensagemSucesso = 'Venda finalizada com sucesso! | Cliente: ' . $this->cliente['nome'] . 
                                   ' | Nº da Venda: ' . $venda->uuid . 
-                                  ' | NFE: ' . $resultadoNFe['numero_nota'];
+                                  ' | NFE: ' . $venda->numero_nota_fiscal .
+                                  ' | Protocolo: ' . ($resultado['numero_protocolo'] ?? 'N/A');
                 
                 session()->flash('success', [
                     'title' => 'Venda finalizada com sucesso!',
                     'message' => $mensagemSucesso
                 ]);
                 
+                Log::info("🔀 Redirecionando para dashboard");
                 return redirect()->route('dashboard.index');
-
+        
             } else {
-                // Se a NF-e falhar, mantém a venda mas marca como sem NF-e
-                $venda->update([
-                    'status_nfe' => 'erro',
-                    'erro_nfe' => $resultadoNFe['erro']
-                ]);
-
+                // ✅ A venda JÁ foi atualizada pelo emitirNFe() - apenas commit  
                 DB::commit();
-
+                Log::warning("⚠️ Venda finalizada mas NF-e rejeitada");
+        
                 $mensagemWarning = 'Venda finalizada, mas NF-e pendente | Cliente: ' . $this->cliente['nome'] . 
                                   ' | Venda: ' . $venda->uuid . 
-                                  ' | Erro NF-e: ' . $resultadoNFe['mensagem'] .
+                                  ' | Erro NF-e: ' . ($resultado['erro'] ?? $resultado['mensagem']) .
                                   ' | Contate o suporte.';
                 
                 session()->flash('warning', [
@@ -205,9 +213,10 @@ class FrenteCaixaPagamento extends Component
                 
                 return redirect()->route('dashboard.index');
             }
-
+        
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error("❌ Exception no processamento: " . $e->getMessage());
             
             session()->flash('error', [
                 'title' => 'Erro ao processar venda',
@@ -221,6 +230,20 @@ class FrenteCaixaPagamento extends Component
     public function voltarParaCarrinho()
     {
         return redirect()->route('frente-caixa');
+    }
+
+    public function seriePadrao(): string
+    {
+        return '1'; // Série principal
+    }
+
+    public function proximoNumeroNota(): int
+    {
+        $ultimaNFe = Venda::whereNotNull('numero_nota_fiscal')
+                        ->orderBy('numero_nota_fiscal', 'desc') // ← CORREÇÃO: order by numero, não created_at
+                        ->first();
+        
+        return $ultimaNFe ? intval($ultimaNFe->numero_nota_fiscal) + 1 : 1003; // ← Começar de 1003
     }
 
     public function render()
