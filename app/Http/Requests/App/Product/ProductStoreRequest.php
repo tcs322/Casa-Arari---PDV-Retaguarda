@@ -21,7 +21,8 @@ class ProductStoreRequest extends FormRequest
             // Dados básicos do produto
             "nome_titulo" => ["required", "min:3", "max:255"],
             "codigo" => ["required", "string", "unique:products,codigo"],
-            "preco" => ["required", "decimal:0,2", "min:0"],
+            "preco_compra" => ["nullable", "decimal:0,2", "min:0"],
+            "preco_venda" => ["nullable", "decimal:0,2", "min:0"],
             "estoque" => ["required", "integer", "min:0"],
             "autor" => ["nullable", "string", "max:255"],
             "edicao" => ["nullable", "integer", "min:1"],

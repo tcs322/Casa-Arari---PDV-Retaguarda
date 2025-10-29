@@ -11,7 +11,8 @@ class ProductStoreDTO
     public function __construct(
         public string $codigo,
         public string $nome_titulo,
-        public string $preco,
+        public ?string $preco_compra = null,
+        public ?string $preco_venda = null,
         public int $estoque,
         public ?string $autor,
         public ?int $edicao,
@@ -37,7 +38,8 @@ class ProductStoreDTO
         return new self(
             $request->codigo,
             $request->nome_titulo,
-            $request->preco,
+            $request->preco_compra,
+            $request->preco_venda,
             $request->estoque,
             $request->autor,
             $request->edicao,

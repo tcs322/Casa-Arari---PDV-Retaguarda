@@ -13,7 +13,7 @@
         @foreach($products->items() as $index => $product)
             <tr>
                 <td>{{ $product->nome_titulo }}</td>
-                <td>{{ $product->preco }}</td>
+                <td>{{ $product->preco_venda ?? null}}</td>
                 <td>{{ $product->estoque }}</td>
                 <td>{{ $product->tipo }}</td>
                 <td class="text-right">

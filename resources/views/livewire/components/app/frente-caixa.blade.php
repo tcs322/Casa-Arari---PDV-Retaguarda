@@ -104,7 +104,7 @@
                             >
                                 <div class="font-semibold">{{ $produto['nome_titulo'] ?? $produto['nome'] }}</div>
                                 <div class="text-sm text-gray-600">Código: {{ $produto['codigo'] }}</div>
-                                <div class="text-sm text-green-600">R$ {{ number_format($produto['preco'], 2, ',', '.') }}</div>
+                                <div class="text-sm text-green-600">R$ {{ number_format($produto['preco_venda'], 2, ',', '.') }}</div>
                                 <div class="text-sm text-gray-500">Estoque: {{ $produto['estoque'] }}</div>
                             </div>
                         @endforeach
@@ -288,7 +288,59 @@
         </div>
 
         {{-- Coluna de Resumo --}}
-        <div class="lg:col-span-1">
+        <div class="lg:col-span-1 space-y-2">
+            <div class="bg-white text-gray-700 rounded-lg shadow p-4 sticky top-4">
+                <h2 class="text-lg font-semibold mb-4">Usuário</h2>
+                @if($usuarioSelecionado)
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                        <div class="flex justify-between items-start mb-2">
+                            <div class="flex-1">
+                                <div class="font-semibold text-blue-800">{{ $usuarioSelecionado['name'] }}</div>
+                            </div>
+                            <button 
+                                wire:click="removerUsuario"
+                                class="p-1 text-red-500 hover:text-red-700 transition-colors"
+                                title="Remover usuário"
+                            >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                @else
+                    <input 
+                        type="text" 
+                        wire:model="searchUsuario" 
+                        wire:keydown.debounce.500ms="buscarUsuarios"
+                        placeholder="Buscar usuario por nome"
+                        class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+
+                    {{-- Resultados da Busca de Clientes --}}
+                    @if(!empty($usuariosEncontrados))
+                        <div class="mt-4 space-y-2 max-h-48 overflow-y-auto">
+                            @foreach($usuariosEncontrados as $usuario)
+                                <div 
+                                    class="p-3 border border-gray-200 rounded-lg hover:bg-blue-50 cursor-pointer transition-colors"
+                                    wire:click="selecionarUsuario({{ json_encode($usuario) }})"
+                                    wire:key="usuario-{{ $usuario['uuid'] }}"
+                                >
+                                    <div class="font-semibold">{{ $usuario['name'] }}</div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+
+                    {{-- Loading State para Usuário --}}
+                    @if($searchUsuario && empty($usuariosEncontrados))
+                        <div class="mt-4 text-center text-gray-500">
+                            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500 mx-auto"></div>
+                            <p class="mt-2">Buscando usuario...</p>
+                        </div>
+                    @endif
+                @endif
+            </div>
             <div class="bg-white text-gray-700 rounded-lg shadow p-4 sticky top-4">
                 <h2 class="text-lg font-semibold mb-4">Resumo da Venda</h2>
                 

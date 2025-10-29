@@ -8,10 +8,6 @@ use App\Models\Venda;
 use App\Models\VendaItem;
 use App\Models\Product;
 use App\Services\Nota\NFeGenerateService;
-use App\Services\Nota\NFeIntegrationService;
-use App\Services\Nota\NFeService;
-use App\Traits\Nota\NFeGenerateNumber;
-use App\Traits\Nota\NFeGenerateSerie;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -27,6 +23,7 @@ class FrenteCaixaPagamento extends Component
     public $descontoGeral = 0;
     public $tipoDescontoGeral = 'percentual';
     public $cliente = null; // Agora obrigatório
+    public $usuario = null;
     public $ehCartao = false;
     public $ehDinheiro = false;
     
@@ -53,11 +50,17 @@ class FrenteCaixaPagamento extends Component
             return redirect()->route('frente-caixa');
         }
 
+        if (!isset($vendaDados['usuario']) || !$vendaDados['usuario']) {
+            session()->flash('error', 'Usuario não selecionado. Por favor, selecione um cliente antes de finalizar a venda.');
+            return redirect()->route('frente-caixa');
+        }
+
         $this->carrinho = $vendaDados['carrinho'];
         $this->total = $vendaDados['total'];
         $this->descontoGeral = $vendaDados['desconto_geral'];
         $this->tipoDescontoGeral = $vendaDados['tipo_desconto_geral'];
         $this->cliente = $vendaDados['cliente']; // Agora obrigatório
+        $this->usuario = $vendaDados['usuario']; // Agora obrigatório
     }
 
     public function updatedFormaPagamento($value)
@@ -130,7 +133,7 @@ class FrenteCaixaPagamento extends Component
             // Cria a venda com o cliente_uuid (agora obrigatório)
             $venda = Venda::create([
                 'uuid' => Str::uuid(),
-                'usuario_uuid' => Auth::user()->uuid,
+                'usuario_uuid' => $this->usuario['uuid'],
                 'cliente_uuid' => $this->cliente['uuid'], // Agora obrigatório
                 'forma_pagamento' => $this->formaPagamento,
                 'bandeira_cartao' => $this->ehCartao ? $this->bandeiraCartao : null,
@@ -243,7 +246,7 @@ class FrenteCaixaPagamento extends Component
                         ->orderBy('numero_nota_fiscal', 'desc') // ← CORREÇÃO: order by numero, não created_at
                         ->first();
         
-        return $ultimaNFe ? intval($ultimaNFe->numero_nota_fiscal) + 1 : 1003; // ← Começar de 1003
+        return $ultimaNFe ? intval($ultimaNFe->numero_nota_fiscal) + 1 : 1050; // ← Começar de 1003
     }
 
     public function render()

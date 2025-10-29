@@ -4,15 +4,19 @@ namespace App\Livewire\Components\App;
 
 use App\Models\Product;
 use App\Models\Cliente;
+use App\Models\User;
 use Livewire\Component;
 
 class FrenteCaixa extends Component
 {
     public $search = '';
     public $searchCliente = '';
+    public $searchUsuario = '';
     public $produtosEncontrados = [];
     public $clientesEncontrados = [];
+    public $usuariosEncontrados = [];
     public $clienteSelecionado = null;
+    public $usuarioSelecionado = null;
     public $carrinho = [];
     public $totalCarrinho = 0;
     public $descontoGeral = 0;
@@ -67,6 +71,38 @@ class FrenteCaixa extends Component
         $this->searchCliente = '';
     }
 
+    public function buscarUsuarios()
+    {
+        if (strlen($this->searchUsuario) < 2) {
+            $this->usuariosEncontrados = [];
+            return;
+        }
+
+        $this->usuariosEncontrados = User::where('name', 'like', '%' . $this->searchUsuario . '%')
+            ->limit(10)
+            ->get()
+            ->map(function ($usuario) {
+                return [
+                    'uuid' => $usuario->uuid,
+                    'name' => $usuario->name,
+                ];
+            })
+            ->toArray();
+    }
+
+    public function selecionarUsuario($usuarioData)
+    {
+        $this->usuarioSelecionado = $usuarioData;
+        $this->searchUsuario = '';
+        $this->usuariosEncontrados = [];
+    }
+
+    public function removerUsuario()
+    {
+        $this->usuarioSelecionado = null;
+        $this->searchUsuario = '';
+    }
+
     public function adicionarAoCarrinho($produtoId)
     {
         $produto = Product::find($produtoId);
@@ -85,9 +121,9 @@ class FrenteCaixa extends Component
                 'uuid' => $produto->uuid,
                 'codigo' => $produto->codigo,
                 'nome' => $produto->nome_titulo,
-                'preco' => $produto->preco,
+                'preco' => $produto->preco_venda,
                 'quantidade' => 1,
-                'subtotal' => $produto->preco,
+                'subtotal' => $produto->preco_venda,
                 'desconto' => 0,
                 'tipo_desconto' => 'percentual'
             ];
@@ -197,7 +233,8 @@ class FrenteCaixa extends Component
             'total' => $this->totalCarrinho,
             'desconto_geral' => $this->descontoGeral,
             'tipo_desconto_geral' => $this->tipoDescontoGeral,
-            'cliente' => $this->clienteSelecionado // Agora obrigatório
+            'cliente' => $this->clienteSelecionado, // Agora obrigatório
+            'usuario' => $this->usuarioSelecionado
         ]);
 
         // Redireciona para a página de pagamento
