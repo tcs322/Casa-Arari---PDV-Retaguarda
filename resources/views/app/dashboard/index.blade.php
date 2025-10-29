@@ -5,7 +5,7 @@
 <x-layouts.headers.create-header :title="'Casa Arari Dashboard'"/>
 
 @section('content')
-<section class="container px-4 mx-auto">
+<section class="container px-4 mx-auto space-y-20">
     <div class="flex justify-start mt-10 space-x-10">
         <!-- Botão Nova Venda -->
         <a href="{{ route('frente-caixa') }}"
@@ -28,6 +28,11 @@
             </svg>
             Novo Cliente
         </a>
+    </div>
+
+    <!-- Card Total Diário -->
+    <div class="flex justify-start mt-10">
+        <x-layouts.cards.total-diario :total="$dashboardData['totalDiario'] ?? 0" />
     </div>
 </section>
 

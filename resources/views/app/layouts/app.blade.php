@@ -101,6 +101,21 @@
 
     </div>
 
+    @if(session('success'))
+    <div class="alert alert-success">
+        @if(is_array(session('success')))
+            <div class="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
+                <div class="font-bold">Sucesso!</div>
+                <div>{{ session('success.title') }}</div>
+                <div>{{ session('success.message') }}</div>
+            </div>
+        @else
+            {{ session('success') }}
+        @endif
+        
+    </div>
+    @endif
+
     <div>
         <div class="mt-2">
             @yield('content')
@@ -241,21 +256,6 @@ MENU PRINCIPAL
         </div>
     </div>
 </div>
-
-@if(session('success'))
-    <div class="alert alert-success">
-        @if(is_array(session('success')))
-            <div class="mb-6 p-4 bg-green-100 border border-green-400 text-green-700 rounded-lg">
-                <div class="font-bold">Sucesso!</div>
-                <div>{{ session('success.title') }}</div>
-                <div>{{ session('success.message') }}</div>
-            </div>
-        @else
-            {{ session('success') }}
-        @endif
-        
-    </div>
-@endif
 
 <div data-dial-init class="fixed end-6 bottom-6 group">
     <div id="speed-dial-menu-default" class="flex flex-col items-center hidden mb-4 space-y-2">
