@@ -15,7 +15,7 @@ class DashboardIndexController extends Controller
     public function index(DashboardIndexRequest $DashboardIndexRequest)
     {
         $dashboardData = $this->indexAction->exec();
-
+        
         return view('app.dashboard.index', compact('dashboardData'));
     }
 }

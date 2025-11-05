@@ -235,7 +235,6 @@ class NotaProdutos extends Component
             $this->processarProduto($produto, $nota);
         }
 
-        session()->flash('success', 'Nota e produtos salvos com sucesso!');
         return redirect()->route('nota.index')->with('message', 'Entrada registrada com sucesso');
     }
 
@@ -250,7 +249,7 @@ class NotaProdutos extends Component
         $dadosProduto = [
             'codigo'          => $produto['cProd'],
             'nome_titulo'     => $produto['xProd'],
-            'preco'           => $produto['vUnCom'],
+            'preco_compra'    => $produto['vUnCom'],
             'estoque'         => $produto['qCom'],
             'fornecedor_uuid' => $this->fornecedor_uuid,
             'nota_uuid'       => $nota->uuid,
@@ -265,7 +264,7 @@ class NotaProdutos extends Component
             // Atualiza estoque e mantém tributação existente
             $registro->update([
                 'nome_titulo'     => $dadosProduto['nome_titulo'],
-                'preco'           => $dadosProduto['preco'],
+                'preco_compra'    => $dadosProduto['preco_compra'],
                 'estoque'         => $registro->estoque + $dadosProduto['estoque'],
                 'fornecedor_uuid' => $dadosProduto['fornecedor_uuid'],
                 // Não atualiza campos fiscais para produtos existentes
@@ -313,7 +312,6 @@ class NotaProdutos extends Component
 
         } catch (\Exception $e) {
             // Em caso de erro, usa tributação padrão
-            \Log::error('Erro ao aplicar tributação automática: ' . $e->getMessage());
             return array_merge($dadosProduto, $this->getTributacaoPadrao());
         }
     }

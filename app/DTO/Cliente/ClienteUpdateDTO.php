@@ -11,6 +11,7 @@ class ClienteUpdateDTO extends BaseDTO
         public string $uuid,
         public string $nome,
         public string $cpf,
+        public string $telefone,
         public string $data_nascimento
     ) {}
 
@@ -20,6 +21,7 @@ class ClienteUpdateDTO extends BaseDTO
             $request->uuid,
             $request->nome,
             $request->cpf,
+            $request->telefone,
             $request->data_nascimento
         );
     }

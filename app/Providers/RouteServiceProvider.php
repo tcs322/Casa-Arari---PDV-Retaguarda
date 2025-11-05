@@ -34,7 +34,6 @@ class RouteServiceProvider extends ServiceProvider
                 ->group(base_path('routes/api.php'));
 
             Route::middleware(['web', 'auth', 'force_password_change', 'is_admin'])
-                ->group(base_path('routes/web.php'))
                 ->group(base_path('routes/app/fornecedor.php'))
                 ->group(base_path('routes/app/compra.php'))
                 ->group(base_path('routes/app/usuario.php'))
@@ -45,6 +44,8 @@ class RouteServiceProvider extends ServiceProvider
                 ->group(base_path('routes/app/auth.php'));
 
             Route::middleware(['web', 'auth', 'force_password_change'])
+                ->group(base_path('routes/app/caixa.php'))
+                ->group(base_path('routes/web.php'))
                 ->group(base_path('routes/app/venda.php'))
                 ->group(base_path('routes/app/cliente.php'));
         });

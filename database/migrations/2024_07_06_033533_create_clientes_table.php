@@ -16,6 +16,7 @@ return new class extends Migration
             $table->uuid()->unique();
             $table->string('nome');
             $table->string('cpf');
+            $table->string('telefone')->nullable();
             $table->date('data_nascimento');
             $table->timestamps();
         });

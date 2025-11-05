@@ -2,22 +2,28 @@
 
 namespace App\Livewire\Components\App;
 
+use App\Enums\SituacaoUsuarioEnum;
 use App\Models\Product;
 use App\Models\Cliente;
+use App\Models\User;
 use Livewire\Component;
 
 class FrenteCaixa extends Component
 {
     public $search = '';
     public $searchCliente = '';
+    public $searchUsuario = '';
     public $produtosEncontrados = [];
     public $clientesEncontrados = [];
+    public $usuariosEncontrados = [];
     public $clienteSelecionado = null;
+    public $usuarioSelecionado = null;
     public $carrinho = [];
     public $totalCarrinho = 0;
     public $descontoGeral = 0;
     public $tipoDescontoGeral = 'percentual';
-
+    public $descontoCalculado = 0;
+    
     public function buscarProdutos()
     {
         if (strlen($this->search) < 2) {
@@ -30,6 +36,39 @@ class FrenteCaixa extends Component
             ->limit(10)
             ->get()
             ->toArray();
+    }
+
+    public function buscarPorCodigoBarras($barcode)
+    {
+        // Limpar espaços e caracteres especiais
+        $barcode = trim($barcode);
+        
+        if (empty($barcode)) {
+            return;
+        }
+
+        // Buscar produto pelo código de barras
+        $produto = Product::where('codigo_barras', $barcode)
+            ->orWhere('codigo', $barcode) // Também busca pelo código interno
+            ->first();
+
+        if ($produto) {
+            // Se encontrou, adiciona ao carrinho
+            $this->adicionarAoCarrinho($produto->id);
+            
+            // Opcional: mostrar mensagem de sucesso
+            session()->flash('message', 'Produto "' . $produto->nome_titulo . '" adicionado via código de barras!');
+        } else {
+            // Se não encontrou, preenche o campo de busca para busca normal
+            $this->search = $barcode;
+            $this->buscarProdutos();
+            
+            // Opcional: mostrar mensagem
+            session()->flash('error', 'Produto com código "' . $barcode . '" não encontrado. Use a busca manual.');
+        }
+        
+        // Disparar evento para re-focar no leitor
+        $this->dispatchBrowserEvent('barcode-processed');
     }
 
     public function buscarClientes()
@@ -67,6 +106,39 @@ class FrenteCaixa extends Component
         $this->searchCliente = '';
     }
 
+    public function buscarUsuarios()
+    {
+        if (strlen($this->searchUsuario) < 2) {
+            $this->usuariosEncontrados = [];
+            return;
+        }
+
+        $this->usuariosEncontrados = User::where('name', 'like', '%' . $this->searchUsuario . '%')
+            ->where('situacao', SituacaoUsuarioEnum::ATIVO())
+            ->limit(10)
+            ->get()
+            ->map(function ($usuario) {
+                return [
+                    'uuid' => $usuario->uuid,
+                    'name' => $usuario->name,
+                ];
+            })
+            ->toArray();
+    }
+
+    public function selecionarUsuario($usuarioData)
+    {
+        $this->usuarioSelecionado = $usuarioData;
+        $this->searchUsuario = '';
+        $this->usuariosEncontrados = [];
+    }
+
+    public function removerUsuario()
+    {
+        $this->usuarioSelecionado = null;
+        $this->searchUsuario = '';
+    }
+
     public function adicionarAoCarrinho($produtoId)
     {
         $produto = Product::find($produtoId);
@@ -85,11 +157,11 @@ class FrenteCaixa extends Component
                 'uuid' => $produto->uuid,
                 'codigo' => $produto->codigo,
                 'nome' => $produto->nome_titulo,
-                'preco' => $produto->preco,
+                'preco' => $produto->preco_venda,
                 'quantidade' => 1,
-                'subtotal' => $produto->preco,
-                'desconto' => 0,
-                'tipo_desconto' => 'percentual'
+                'subtotal' => $produto->preco_venda,
+                'desconto' => $this->descontoGeral,
+                'tipo_desconto' => $this->tipoDescontoGeral
             ];
         }
 
@@ -152,6 +224,7 @@ class FrenteCaixa extends Component
     {
         $total = 0;
 
+        // 1️⃣ Calcula subtotais individuais com descontos próprios
         foreach ($this->carrinho as $index => $item) {
             $subtotal = $item['preco'] * $item['quantidade'];
             
@@ -162,22 +235,57 @@ class FrenteCaixa extends Component
                     $subtotal -= $item['desconto'];
                 }
             }
-
+    
             $this->carrinho[$index]['subtotal'] = max($subtotal, 0);
             $total += $this->carrinho[$index]['subtotal'];
         }
-
-        if ($this->descontoGeral > 0) {
+    
+        // 2️⃣ Calcula e aplica desconto geral
+        $this->descontoCalculado = 0; // inicializa para evitar lixo de memória
+        
+        if ($this->descontoGeral > 0 && $total > 0) {
             if ($this->tipoDescontoGeral === 'percentual') {
-                $total -= $total * ($this->descontoGeral / 100);
+                // Calcula o desconto real com base no total bruto
+                $this->descontoCalculado = round($total * ($this->descontoGeral / 100), 2);
+                
+                // Aplica proporcionalmente o desconto percentual
+                foreach ($this->carrinho as $index => $item) {
+                    $novoSubtotal = $item['subtotal'] - ($item['subtotal'] * ($this->descontoGeral / 100));
+                    $this->carrinho[$index]['subtotal'] = round(max($novoSubtotal, 0), 2);
+                }
+    
+                $total -= $this->descontoCalculado;
+    
             } else {
-                $total -= $this->descontoGeral;
+                // 🔹 Valor fixo
+                $this->descontoCalculado = round(min($this->descontoGeral, $total), 2);
+    
+                $descontoTotalAplicado = 0;
+                $ultimoIndex = array_key_last($this->carrinho);
+    
+                foreach ($this->carrinho as $index => $item) {
+                    $proporcao = $item['subtotal'] / $total;
+                    $descontoProporcional = $this->descontoCalculado * $proporcao;
+    
+                    if ($index === $ultimoIndex) {
+                        $descontoProporcional = $this->descontoCalculado - $descontoTotalAplicado;
+                    }
+    
+                    $descontoProporcional = round($descontoProporcional, 2);
+                    $descontoTotalAplicado += $descontoProporcional;
+    
+                    $novoSubtotal = $item['subtotal'] - $descontoProporcional;
+                    $this->carrinho[$index]['subtotal'] = round(max($novoSubtotal, 0), 2);
+                }
+    
+                $total -= $this->descontoCalculado;
             }
         }
-
-        $this->totalCarrinho = max($total, 0);
+    
+        // 3️⃣ Total final
+        $this->totalCarrinho = round(max($total, 0), 2);
     }
-
+    
     public function finalizarVenda()
     {
         if (empty($this->carrinho)) {
@@ -197,7 +305,8 @@ class FrenteCaixa extends Component
             'total' => $this->totalCarrinho,
             'desconto_geral' => $this->descontoGeral,
             'tipo_desconto_geral' => $this->tipoDescontoGeral,
-            'cliente' => $this->clienteSelecionado // Agora obrigatório
+            'cliente' => $this->clienteSelecionado, // Agora obrigatório
+            'usuario' => $this->usuarioSelecionado
         ]);
 
         // Redireciona para a página de pagamento

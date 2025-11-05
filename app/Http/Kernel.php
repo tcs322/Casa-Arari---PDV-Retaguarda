@@ -66,5 +66,6 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'is_admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
         'force_password_change' => \App\Http\Middleware\EnsurePasswordChanged::class,
+        'caixa_aberto' => \App\Http\Middleware\CaixaAberto::class,
     ];
 }

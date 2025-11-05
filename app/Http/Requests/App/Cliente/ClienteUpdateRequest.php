@@ -38,6 +38,7 @@ class ClienteUpdateRequest extends FormRequest
                     }
                 },
             ],
+            "telefone" => ["required", "string"],
             "data_nascimento"  => [
                 "required", "date"
             ]

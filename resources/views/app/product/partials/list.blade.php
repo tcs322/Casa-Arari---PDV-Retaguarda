@@ -13,7 +13,7 @@
         @foreach($products->items() as $index => $product)
             <tr>
                 <td>{{ $product->nome_titulo }}</td>
-                <td>{{ $product->preco }}</td>
+                <td>{{ $product->preco_venda ?? null}}</td>
                 <td>{{ $product->estoque }}</td>
                 <td>{{ $product->tipo }}</td>
                 <td class="text-right">
@@ -27,15 +27,6 @@
                     action="editar"
                     color="primary"
                     :route="route('produto.edit', $product->uuid)"/>
-                <x-layouts.buttons.action-button
-                    text="Excluir"
-                    action="excluir"
-                    color="danger"
-                    :identificador="'drawer-delete-confirmacao'"
-                    :route="route('produto.edit', [
-                        'uuid' => $product->uuid
-                    ])"
-                />
                 </td>
             </tr>
         @endforeach

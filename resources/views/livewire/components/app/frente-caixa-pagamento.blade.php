@@ -279,29 +279,4 @@
     </div>
 </div>
 
-@push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/@alpinejs/mask@3.x.x/dist/cdn.min.js" defer></script>
-<script>
-    // Formatação monetária para o campo de valor recebido
-    document.addEventListener('livewire:initialized', () => {
-        const moneyMask = (value, decimals, decimalSeparator, thousandsSeparator) => {
-            if (value === '') return '';
-            
-            let number = value.replace(/\D/g, '');
-            number = (number / Math.pow(10, decimals)).toFixed(decimals);
-            
-            const parts = number.split('.');
-            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, thousandsSeparator);
-            
-            return parts.join(decimalSeparator);
-        };
-
-        // Inicializa a máscara monetária
-        Alpine.magic('money', () => {
-            return (value, decimalSeparator = ',', thousandsSeparator = '.', decimals = 2) => {
-                return moneyMask(value, decimals, decimalSeparator, thousandsSeparator);
-            };
-        });
-    });
-</script>
-@endpush
+<script src="{{ asset('js/thermal-printer.js') }}"></script>

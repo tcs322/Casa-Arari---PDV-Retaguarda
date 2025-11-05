@@ -49,74 +49,117 @@ class NFeGenerateService
         try {
             Log::info('🔧 Iniciando emissão de NF-e para venda: ' . $venda->uuid);
 
-            // 1. Gerar XML
+            // 1️⃣ Gerar XML
             $xml = $this->gerarXml($venda);
             Log::info('📄 XML gerado para venda: ' . $venda->uuid);
+            Log::debug("Conteúdo do XML:", ['xml' => $xml]);
 
-            // 2. Assinar XML
+            // 2️⃣ Assinar XML
             $xmlAssinado = $this->assinarXml($xml);
             Log::info('✅ XML assinado com sucesso');
 
-            // 3. Enviar para SEFAZ
+            // 3️⃣ Enviar para SEFAZ
             $sefazService = new SefaApiService();
             $resultado = $sefazService->autorizarNFe($xmlAssinado);
-            
-            if ($resultado['success']) {
-                // ✅ USANDO OS NOVOS CAMPOS DA MIGRATION
-                $venda->update([
-                    'chave_acesso_nfe' => $resultado['chave_acesso'],
-                    'protocolo_nfe' => $resultado['numero_protocolo'],
-                    'data_autorizacao_nfe' => now(), // Ou $resultado['data_autorizacao'] se disponível
-                    'status_nfe' => 'autorizada',
-                    'xml_nfe' => $xmlAssinado, // XML assinado enviado
-                    'xml_autorizado' => $resultado['xml_autorizado'] ?? null, // XML com protocolo
-                ]);
 
-                Log::info("🎯 NF-e AUTORIZADA - Venda: {$venda->uuid}", [
-                    'chave' => $resultado['chave_acesso'],
-                    'protocolo' => $resultado['numero_protocolo'],
-                    'numero_nota' => $venda->numero_nota_fiscal
-                ]);
+            // 🔍 Determina o tipo da resposta da SEFAZ
+            if (($resultado['success'] ?? false) === true) {
+                $tipo = 'autorizada';
+            } elseif (($resultado['codigo_erro'] ?? '') === 'CONTINGENCIA' || ($resultado['modo_contingencia'] ?? false) === true) {
+                $tipo = 'contingencia';
+            } else {
+                $tipo = 'rejeitada';
+            }
 
-                return [
-                    'success' => true,
-                    'chave_acesso' => $resultado['chave_acesso'],
-                    'numero_protocolo' => $resultado['numero_protocolo'],
-                    'numero_nota' => $venda->numero_nota_fiscal,
-                    'mensagem' => 'NF-e autorizada com sucesso',
-                    'xml' => $resultado['xml_autorizado'] ?? $xmlAssinado
-                ];
-            } else {                
-                $venda->update([
-                    'status_nfe' => 'rejeitada',
-                    'erro_nfe' => $resultado['erro'],
-                ]);
+            switch ($tipo) {
+                // ✅ NF-e AUTORIZADA
+                case 'autorizada':
+                    $venda->update([
+                        'status' => 'finalizada',
+                        'status_nfe' => 'autorizada',
+                        'chave_acesso_nfe' => $resultado['chave_acesso'],
+                        'protocolo_nfe' => $resultado['numero_protocolo'],
+                        'data_autorizacao_nfe' => now(),
+                        'xml_nfe' => $xmlAssinado,
+                        'xml_autorizado' => $resultado['xml'] ?? null,
+                        'erro_nfe' => null,
+                    ]);
 
-                Log::error("❌ NF-e REJEITADA - Venda: {$venda->uuid}", [
-                    'erro' => $resultado['erro'],
-                    'codigo' => $resultado['codigo_erro'] ?? 'N/A'
-                ]);
+                    Log::info("🎯 NF-e AUTORIZADA - Venda: {$venda->uuid}", [
+                        'chave' => $resultado['chave_acesso'] ?? 'N/A',
+                        'protocolo' => $resultado['numero_protocolo'] ?? 'N/A',
+                        'numero_nota' => $venda->numero_nota_fiscal,
+                    ]);
 
-                return [
-                    'success' => false,
-                    'erro' => $resultado['erro'],
-                    'codigo_erro' => $resultado['codigo_erro'] ?? null,
-                    'mensagem' => 'NF-e rejeitada pela SEFAZ'
-                ];
+                    return [
+                        'success' => true,
+                        'tipo' => 'autorizada',
+                        'mensagem' => 'NF-e autorizada com sucesso',
+                        'chave_acesso' => $resultado['chave_acesso'] ?? null,
+                        'numero_protocolo' => $resultado['numero_protocolo'] ?? null,
+                        'numero_nota' => $venda->numero_nota_fiscal,
+                        'xml' => $resultado['xml'] ?? $xmlAssinado,
+                    ];
+
+                // ⚙️ NF-e EM CONTINGÊNCIA
+                case 'contingencia':
+                    $venda->update([
+                        'status' => 'finalizada',
+                        'status_nfe' => 'contingencia',
+                        'xml_nfe' => $xmlAssinado,
+                        'erro_nfe' => $resultado['erro'] ?? 'SEFAZ indisponível',
+                    ]);
+
+                    Log::warning("⚙️ NF-e EMITIDA EM CONTINGÊNCIA - Venda: {$venda->uuid}", [
+                        'erro' => $resultado['erro'] ?? 'SEFAZ indisponível',
+                        'codigo' => $resultado['codigo_erro'] ?? 'CONTINGENCIA',
+                    ]);
+
+                    return [
+                        'success' => false,
+                        'tipo' => 'contingencia',
+                        'mensagem' => 'SEFAZ indisponível — emissão em contingência necessária.',
+                        'erro' => $resultado['erro'] ?? 'SEFAZ fora do ar',
+                        'codigo_erro' => $resultado['codigo_erro'] ?? 'CONTINGENCIA',
+                    ];
+
+                // ❌ NF-e REJEITADA
+                case 'rejeitada':
+                default:
+                    $venda->update([
+                        'status' => 'pendente',
+                        'status_nfe' => 'rejeitada',
+                        'xml_nfe' => $xmlAssinado,
+                        'erro_nfe' => $resultado['erro'] ?? 'Rejeição não especificada',
+                    ]);
+
+                    Log::error("❌ NF-e REJEITADA - Venda: {$venda->uuid}", [
+                        'erro' => $resultado['erro'] ?? 'Desconhecido',
+                        'codigo' => $resultado['codigo_erro'] ?? 'N/A',
+                    ]);
+
+                    return [
+                        'success' => false,
+                        'tipo' => 'rejeitada',
+                        'mensagem' => 'NF-e rejeitada pela SEFAZ',
+                        'erro' => $resultado['erro'] ?? 'Rejeição não especificada',
+                        'codigo_erro' => $resultado['codigo_erro'] ?? null,
+                    ];
             }
 
         } catch (\Exception $e) {
             Log::error('❌ Erro na emissão de NF-e para venda ' . $venda->uuid . ': ' . $e->getMessage());
-            
+
             $venda->update([
                 'status_nfe' => 'erro',
                 'erro_nfe' => $e->getMessage(),
             ]);
-            
+
             return [
                 'success' => false,
+                'tipo' => 'erro',
                 'erro' => $e->getMessage(),
-                'mensagem' => 'Falha na emissão da NF-e'
+                'mensagem' => 'Falha interna na emissão da NF-e',
             ];
         }
     }
@@ -341,14 +384,14 @@ class NFeGenerateService
             'ie' => config('nfe.ie', '750432209'),
             'crt' => '1', // Simples Nacional
             'endereco' => [
-                'logradouro' => 'AVENIDA PRESIDENTE VARGAS',
-                'numero' => '1000',
-                'bairro' => 'CENTRO',
-                'codigo_municipio' => '1501402',
-                'municipio' => 'BELEM',
-                'uf' => 'PA',
-                'cep' => '66000000',
-                'telefone' => '9133334444'
+                'logradouro' => config('nfe.logradouro'),
+                'numero' => config('nfe.numero'),
+                'bairro' => config('nfe.bairro'),
+                'codigo_municipio' => config('nfe.codigo_municipio'),
+                'municipio' => config('nfe.municipio'),
+                'uf' => config('nfe.uf'),
+                'cep' => config('nfe.cep'),
+                'telefone' => config('nfe.telefone')
             ]
         ];
     }
@@ -407,6 +450,8 @@ class NFeGenerateService
             $valorCOFINS = number_format($item->preco_total * 0.0760, 2, '.', '');
             $qCom = number_format($item->quantidade, 4, '.', '');
 
+            $preco_unitario = $item->preco_unitario - $item->desconto;
+
             $produtosXml .= <<<XML
     <det nItem="{$nItem}">
     <prod>
@@ -418,12 +463,12 @@ class NFeGenerateService
         <CFOP>5102</CFOP>
         <uCom>UN</uCom>
         <qCom>{$qCom}</qCom>
-        <vUnCom>{$item->preco_unitario}</vUnCom>
+        <vUnCom>{$item->subtotal}</vUnCom>
         <vProd>{$item->preco_total}</vProd>
         <cEANTrib>7890000000000</cEANTrib>
         <uTrib>UN</uTrib>
         <qTrib>{$qCom}</qTrib>
-        <vUnTrib>{$item->preco_unitario}</vUnTrib>
+        <vUnTrib>{$item->subtotal}</vUnTrib>
         <indTot>1</indTot>
     </prod>
     <imposto>

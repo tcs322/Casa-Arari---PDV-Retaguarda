@@ -10,6 +10,7 @@ class ClienteStoreDTO extends BaseDTO
     public function __construct(
         public string $nome,
         public string $cpf,
+        public string $telefone,
         public string $data_nascimento
     ) {}
 
@@ -18,6 +19,7 @@ class ClienteStoreDTO extends BaseDTO
         return new self(
             $request->nome,
             $request->cpf,
+            $request->telefone,
             $request->data_nascimento
         );
     }

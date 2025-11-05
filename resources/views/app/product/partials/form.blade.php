@@ -16,10 +16,16 @@
 </div>
 <div class="flex flex-wrap -mx-3 mb-2">
     <x-layouts.inputs.input-normal-text
-        label="Preço"
-        name="preco"
-        lenght="4/12"
-        :value="$product->preco ?? old('preco')"
+        label="Preço De Compra"
+        name="preco_compra"
+        lenght="3/12"
+        :value="$product->preco_compra ?? old('preco_compra')"
+    />
+    <x-layouts.inputs.input-normal-text
+        label="Preço De Venda"
+        name="preco_venda"
+        lenght="3/12"
+        :value="$product->preco_venda ?? old('preco_venda')"
     />
     <x-layouts.inputs.input-normal-number
         label="Qtd Em Estoque"

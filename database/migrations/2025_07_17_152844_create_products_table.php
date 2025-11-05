@@ -18,7 +18,8 @@ return new class extends Migration
             $table->uuid()->unique();
             $table->string('codigo')->unique()->nullable();
             $table->string('nome_titulo');
-            $table->decimal('preco');
+            $table->decimal('preco_compra', 10, 2)->nullable();
+            $table->decimal('preco_venda', 10, 2)->nullable();
             $table->integer('estoque');
             $table->string('autor')->nullable();
             $table->integer('edicao')->nullable();

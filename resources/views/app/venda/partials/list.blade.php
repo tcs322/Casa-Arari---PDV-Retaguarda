@@ -22,11 +22,10 @@
                     action="ver"
                     color="secondary"
                     :route="route('venda.show', $venda->uuid)"/>
-                <x-layouts.buttons.action-button
-                    text="Editar"
-                    action="editar"
-                    color="primary"
-                    :route="route('fornecedor.edit', $venda->uuid)"/>
+                <x-layouts.buttons.cancelar-venda-button
+                    :route="route('venda.cancelar', $venda->uuid)"
+                    identificador="cancelar-venda-{{ $venda->uuid }}"
+                />
             </td>
         </tr>
     @endforeach
