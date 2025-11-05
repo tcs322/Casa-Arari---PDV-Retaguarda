@@ -28,7 +28,8 @@ class ProductTributacaoService
         return new ProductStoreDTO(
             $dto->codigo,
             $dto->nome_titulo,
-            $dto->preco,
+            $dto->preco_compra,
+            $dto->preco_venda,
             $dto->estoque,
             $dto->autor,
             $dto->edicao,
