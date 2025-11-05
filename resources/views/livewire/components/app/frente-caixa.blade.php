@@ -391,6 +391,7 @@
 @push('scripts')
 <script>
     document.addEventListener('livewire:initialized', () => {
+        // Seu código existente para o modal
         Livewire.on('open-modal', (event) => {
             if (event === 'confirmar-limpar-carrinho') {
                 if (confirm('Tem certeza que deseja limpar o carrinho? Todos os itens serão removidos.')) {
@@ -398,6 +399,154 @@
                 }
             }
         });
+
+        console.log('passei aqui');
+        // ===== NOVO CÓDIGO PARA LEITOR DE CÓDIGO DE BARRAS =====
+        
+        class BarcodeHandler {
+            constructor() {
+                this.barcodeBuffer = '';
+                this.timeout = null;
+                this.isReading = true;
+                this.init();
+            }
+
+            init() {
+                // Criar input hidden para o leitor
+                this.createBarcodeInput();
+                
+                // Adicionar event listeners
+                this.setupEventListeners();
+                
+                console.log('Leitor de código de barras inicializado');
+            }
+
+            createBarcodeInput() {
+                this.barcodeInput = document.createElement('input');
+                this.barcodeInput.type = 'text';
+                this.barcodeInput.style.cssText = `
+                    position: absolute;
+                    left: -9999px;
+                    opacity: 0;
+                    width: 1px;
+                    height: 1px;
+                `;
+                this.barcodeInput.id = 'barcode-scanner-input';
+                document.body.appendChild(this.barcodeInput);
+                
+                // Focar automaticamente no input
+                setTimeout(() => {
+                    this.barcodeInput.focus();
+                }, 1000);
+            }
+
+            setupEventListeners() {
+                // Capturar teclas do leitor
+                this.barcodeInput.addEventListener('keydown', (event) => {
+                    this.handleBarcodeKey(event);
+                });
+
+                // Re-focar no leitor quando clicar em qualquer lugar
+                document.addEventListener('click', () => {
+                    if (this.isReading) {
+                        this.barcodeInput.focus();
+                    }
+                });
+
+                // Re-focar quando houver interação do Livewire
+                Livewire.on('carrinho-atualizado', () => {
+                    setTimeout(() => {
+                        if (this.isReading) {
+                            this.barcodeInput.focus();
+                        }
+                    }, 100);
+                });
+            }
+
+            handleBarcodeKey(event) {
+                // Se for uma tecla normal (letra, número, etc)
+                if (event.key.length === 1 && !event.ctrlKey && !event.altKey && !event.metaKey) {
+                    this.barcodeBuffer += event.key;
+                    event.preventDefault();
+                }
+
+                // Limpar timeout anterior
+                if (this.timeout) {
+                    clearTimeout(this.timeout);
+                }
+
+                // Configurar novo timeout (assume fim do código após 100ms sem input)
+                this.timeout = setTimeout(() => {
+                    if (this.barcodeBuffer.length >= 3) { // Mínimo de 3 caracteres para ser válido
+                        this.processBarcode(this.barcodeBuffer);
+                    }
+                    this.barcodeBuffer = '';
+                }, 100);
+
+                // Se for Enter, processa imediatamente
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    if (this.barcodeBuffer.length >= 3) {
+                        this.processBarcode(this.barcodeBuffer);
+                    }
+                    this.barcodeBuffer = '';
+                    if (this.timeout) {
+                        clearTimeout(this.timeout);
+                    }
+                }
+            }
+
+            processBarcode(barcode) {
+                console.log('Código de barras lido:', barcode);
+                
+                // Chamar o método Livewire para buscar pelo código de barras
+                @this.buscarPorCodigoBarras(barcode);
+                
+                // Limpar e re-focar para próximo scan
+                setTimeout(() => {
+                    this.barcodeInput.value = '';
+                    this.barcodeInput.focus();
+                }, 50);
+            }
+
+            setActive(active) {
+                this.isReading = active;
+                if (active) {
+                    this.barcodeInput.focus();
+                }
+            }
+        }
+
+        // Inicializar o leitor
+        window.barcodeHandler = new BarcodeHandler();
+
+        // Atalhos de teclado
+        document.addEventListener('keydown', function(event) {
+            // F1 para ativar/desativar leitor
+            if (event.key === 'F1') {
+                event.preventDefault();
+                const currentlyActive = window.barcodeHandler.isReading;
+                window.barcodeHandler.setActive(!currentlyActive);
+                
+                if (!currentlyActive) {
+                    console.log('Leitor de código de barras ativado');
+                } else {
+                    console.log('Leitor de código de barras desativado');
+                }
+            }
+            
+            // F2 para focar na busca manual
+            if (event.key === 'F2') {
+                event.preventDefault();
+                const searchInput = document.querySelector('[wire\\:model="search"]');
+                if (searchInput) {
+                    window.barcodeHandler.setActive(false);
+                    searchInput.focus();
+                    console.log('Modo busca manual ativado');
+                }
+            }
+        });
+
     });
 </script>
 @endpush

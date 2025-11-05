@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Livewire\Component;
+use Illuminate\Support\Facades\Http;
 
 class FrenteCaixaPagamento extends Component
 {
@@ -130,11 +131,11 @@ class FrenteCaixaPagamento extends Component
         DB::beginTransaction();
 
         try {
-            // Cria a venda com o cliente_uuid (agora obrigatório)
+            // 1. Cria a venda
             $venda = Venda::create([
                 'uuid' => Str::uuid(),
                 'usuario_uuid' => $this->usuario['uuid'],
-                'cliente_uuid' => $this->cliente['uuid'], // Agora obrigatório
+                'cliente_uuid' => $this->cliente['uuid'],
                 'forma_pagamento' => $this->formaPagamento,
                 'bandeira_cartao' => $this->ehCartao ? $this->bandeiraCartao : null,
                 'quantidade_parcelas' => $this->ehCartao ? $this->parcelas : null,
@@ -143,14 +144,14 @@ class FrenteCaixaPagamento extends Component
                 'troco' => $this->ehDinheiro ? $this->troco : 0,
                 'numero_nota_fiscal' => $this->proximoNumeroNota(),
                 'serie_nfe' => $this->seriePadrao(),
-                'status' => 'finalizada',
+                'status' => 'finalizada', // valor inicial
                 'observacoes' => $this->observacoes,
                 'data_venda' => now(),
             ]);
 
-            // Cria os itens da venda
+            // 2. Cria os itens da venda
             foreach ($this->carrinho as $item) {
-                $valor_total = $item['preco'] * $item['quantidade'];
+                $valor_total = $item['subtotal'] * $item['quantidade'];
                 $valor_total_formatado = number_format($valor_total, 2, '.');
 
                 VendaItem::create([
@@ -174,60 +175,135 @@ class FrenteCaixaPagamento extends Component
 
             Log::info("✅ Venda criada: {$venda->uuid}");
 
-            // 2. Processar NF-e com NFeGenerateService
-            $nfeService = new NFeGenerateService(); // ← Seu service atual
+            // 3. Processar NF-e
+            $nfeService = new NFeGenerateService();
             $resultado = $nfeService->emitirNFe($venda);
             Log::info("📋 Resultado NF-e:", $resultado);
-        
-            if ($resultado['success']) {
-                // ✅ A venda JÁ foi atualizada pelo emitirNFe() - apenas commit
-                DB::commit();
-                Log::info("🎯 NF-e AUTORIZADA - Commit realizado");
-        
-                session()->forget('venda_dados');
-                
-                $mensagemSucesso = 'Venda finalizada com sucesso! | Cliente: ' . $this->cliente['nome'] . 
-                                  ' | Nº da Venda: ' . $venda->uuid . 
-                                  ' | NFE: ' . $venda->numero_nota_fiscal .
-                                  ' | Protocolo: ' . ($resultado['numero_protocolo'] ?? 'N/A');
-                
-                session()->flash('success', [
-                    'title' => 'Venda finalizada com sucesso!',
-                    'message' => $mensagemSucesso
-                ]);
-                
-                Log::info("🔀 Redirecionando para dashboard");
-                return redirect()->route('dashboard.index');
-        
+
+            DB::commit();
+
+            // 4. Impressão e mensagens baseadas no tipo de retorno
+            $dadosCupom = $this->getDadosImpressao($venda->id);
+            // $tipo = $resultado['tipo'] ?? 'erro';
+            if (($resultado['success'] ?? false) === true) {
+                $tipo = 'autorizada';
+            } elseif (($resultado['codigo_erro'] ?? '') === 'CONTINGENCIA') {
+                $tipo = 'contingencia';
             } else {
-                // ✅ A venda JÁ foi atualizada pelo emitirNFe() - apenas commit  
-                DB::commit();
-                Log::warning("⚠️ Venda finalizada mas NF-e rejeitada");
-        
-                $mensagemWarning = 'Venda finalizada, mas NF-e pendente | Cliente: ' . $this->cliente['nome'] . 
-                                  ' | Venda: ' . $venda->uuid . 
-                                  ' | Erro NF-e: ' . ($resultado['erro'] ?? $resultado['mensagem']) .
-                                  ' | Contate o suporte.';
-                
-                session()->flash('warning', [
-                    'title' => 'Venda finalizada, mas NF-e pendente',
-                    'message' => $mensagemWarning
-                ]);
-                
-                return redirect()->route('dashboard.index');
+                $tipo = 'rejeitada';
             }
-        
+
+            switch ($tipo) {
+                case 'autorizada':
+                    $this->imprimirVenda($venda->id, $dadosCupom['print_data'], false);
+
+                    session()->forget('venda_dados');
+
+                    $mensagem = "Venda finalizada e NF-e autorizada | Cliente: {$this->cliente['nome']} | " .
+                                "Venda: {$venda->uuid} | Protocolo: {$resultado['numero_protocolo']}";
+
+                    session()->flash('success', [
+                        'title' => 'Venda finalizada com sucesso!',
+                        'message' => $mensagem
+                    ]);
+
+                    Log::info("🎯 NF-e AUTORIZADA - Venda {$venda->uuid}");
+                    break;
+
+                case 'contingencia':
+                    $this->imprimirVenda($venda->id, $dadosCupom['print_data'], true);
+
+                    $mensagem = "Venda finalizada em contingência (offline) | Cliente: {$this->cliente['nome']} | " .
+                                "Venda: {$venda->uuid} | Cupom emitido offline. Reenvio pendente.";
+
+                    session()->flash('warning', [
+                        'title' => 'Venda emitida em contingência',
+                        'message' => $mensagem
+                    ]);
+
+                    Log::warning("⚠️ NF-e em contingência - Venda {$venda->uuid}");
+                    break;
+
+                case 'rejeitada':
+                    $this->imprimirVenda($venda->id, $dadosCupom['print_data'], true);
+
+                    $mensagem = "Venda registrada, mas NF-e rejeitada pela SEFAZ | Erro: {$resultado['erro']}";
+
+                    session()->flash('error', [
+                        'title' => 'NF-e rejeitada',
+                        'message' => $mensagem
+                    ]);
+
+                    Log::warning("❌ NF-e REJEITADA - Venda {$venda->uuid}");
+                    break;
+
+                default:
+                    throw new \Exception("Erro inesperado na emissão da NF-e");
+            }
+
+            return redirect()->route('dashboard.index');
+
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("❌ Exception no processamento: " . $e->getMessage());
-            
+
             session()->flash('error', [
                 'title' => 'Erro ao processar venda',
                 'message' => 'Erro: ' . $e->getMessage()
             ]);
-            
+
             return back();
         }
+    }
+
+    // No seu FrenteCaixaPagamento.php - mantenha apenas a rota API
+    public function getDadosImpressao($vendaId)
+    {
+        $venda = Venda::findOrFail($vendaId);
+        
+        // Retorna os dados básicos da venda formatados
+        return [
+            'success' => true,
+            'print_data' => [
+                'empresa' => [
+                    'nome' => config('nfe.razao_social', 'Casa Arari LTDA'),
+                    'endereco' => config('nfe.logradouro', 'Rua Exemplo, nfe.numero'),
+                    'cidade' => config('nfe.municipio', 'Belém/PA'),
+                    'cnpj' => config('nfe.cnpj', '00.000.000/0001-00'),
+                    'telefone' => config('nfe.telefone', '(91) 9999-9999')
+                ],
+                'venda' => [
+                    'numero' => $venda->id,
+                    'uuid' => $venda->uuid,
+                    'data' => $venda->created_at->format('d/m/Y H:i:s'),
+                    'cliente' => $venda->cliente ? $venda->cliente->nome : 'CONSUMIDOR FINAL',
+                    'cpf_cnpj' => $venda->cliente ? $venda->cliente->cpf : '',
+                ],
+                'itens' => $venda->itens->map(function($item) {
+                    return [
+                        'descricao' => $item->produto->nome_titulo,
+                        'quantidade' => $item->quantidade,
+                        'valor_unitario' => $item->preco_unitario,
+                        'valor_total' => $item->preco_total
+                    ];
+                }),
+                'totais' => [
+                    'subtotal' => $venda->valor_total, // Ou calcule o subtreal se tiver desconto
+                    'desconto' => 0, // Ajuste conforme sua lógica
+                    'total' => $venda->valor_total
+                ],
+                'pagamentos' => [[
+                    'forma' => $venda->forma_pagamento,
+                    'valor' => $venda->valor_total
+                ]],
+                'contingencia' => request('contingencia', false),
+                'nfe' => [
+                    'numero' => $venda->numero_nota_fiscal,
+                    'serie' => $venda->serie_nfe,
+                    'chave' => $venda->chave_acesso // Se tiver este campo
+                ]
+            ]
+        ];
     }
 
     public function voltarParaCarrinho()
@@ -246,7 +322,159 @@ class FrenteCaixaPagamento extends Component
                         ->orderBy('numero_nota_fiscal', 'desc') // ← CORREÇÃO: order by numero, não created_at
                         ->first();
         
-        return $ultimaNFe ? intval($ultimaNFe->numero_nota_fiscal) + 1 : 1050; // ← Começar de 1003
+        return $ultimaNFe ? intval($ultimaNFe->numero_nota_fiscal) + 1 : 1270; // ← Começar de 1003
+    }
+
+    private function imprimirVenda(int $vendaId, array $dadosCupom, bool $contingencia = false, string $impressora = '71840'): bool
+    {
+        // Montar o texto do cupom
+        $texto = $this->gerarTextoCupom($dadosCupom, $contingencia);
+
+        try {
+            $response = Http::timeout(5)->post('http://host.docker.internal:8050/api/imprimir-direto', [
+                'texto' => $texto,
+                'venda_id' => $vendaId,
+                'impressora' => $impressora,
+            ]);
+
+            if ($response->successful() && $response->json('success')) {
+                Log::info("✅ Cupom enviado para impressão venda #{$vendaId}" . ($contingencia ? " (Contingência)" : ""));
+                return true;
+            } else {
+                Log::warning("❌ Falha na impressão venda #{$vendaId}", [
+                    'response' => $response->body(),
+                    'contingencia' => $contingencia
+                ]);
+                return false;
+            }
+        } catch (\Exception $e) {
+            Log::error("❌ Erro ao imprimir venda #{$vendaId}", [
+                'error' => $e->getMessage(),
+                'contingencia' => $contingencia
+            ]);
+            return false;
+        }
+    }
+
+    /**
+     * Gera o texto simples para o cupom (mesma lógica que você tinha no JS)
+     */
+    private function gerarTextoCupom(array $dadosCupom, bool $contingencia = false): string
+    {
+        $texto = "";
+
+        // Carrega dados do emitente do config/nfe.php
+        $nfeConfig = config('nfe');
+
+        $razaoSocial = $nfeConfig['razao_social'] ?? 'EMPRESA';
+        $nomeFantasia = $nfeConfig['nome_fantasia'] ?? '';
+        $cnpj = $nfeConfig['cnpj'] ?? '';
+        $ie = $nfeConfig['ie'] ?? '';
+        $logradouro = $nfeConfig['logradouro'] ?? '';
+        $numero = $nfeConfig['numero'] ?? '';
+        $bairro = $nfeConfig['bairro'] ?? '';
+        $municipio = $nfeConfig['municipio'] ?? '';
+        $uf = $nfeConfig['uf'] ?? '';
+        $cep = $nfeConfig['cep'] ?? '';
+        $telefone = $nfeConfig['telefone'] ?? '';
+
+        // Cabeçalho (empresa)
+        $texto .= "      {$nomeFantasia}      \n";
+        $texto .= "{$razaoSocial}\n";
+        $texto .= "CNPJ: {$cnpj}\n";
+        $texto .= "IE: {$ie}\n";
+        $texto .= "{$logradouro}, {$numero} - {$bairro}\n";
+        $texto .= "{$municipio} - {$uf}  CEP: {$cep}\n";
+        if (!empty($telefone)) {
+            $texto .= "TEL: {$telefone}\n";
+        }
+        $texto .= "--------------------------------\n";
+        $texto .= "          CUPOM FISCAL          \n";
+        $texto .= "================================\n";
+
+        // Dados da venda
+        $texto .= "Nº VENDA: {$dadosCupom['venda']['numero']}\n";
+        $texto .= "DATA: {$dadosCupom['venda']['data']}\n";
+        if (!empty($dadosCupom['venda']['cliente'])) {
+            $texto .= "CLIENTE: {$dadosCupom['venda']['cliente']}\n";
+        }
+        if (!empty($dadosCupom['venda']['cpf_cnpj'])) {
+            $texto .= "CPF/CNPJ: {$dadosCupom['venda']['cpf_cnpj']}\n";
+        }
+        $texto .= "--------------------------------\n";
+        $texto .= "CÓD  DESCRIÇÃO           QTD  VL UN  VL TOT\n";
+        $texto .= "--------------------------------\n";
+
+        // Itens
+        foreach ($dadosCupom['itens'] as $i => $item) {
+            $codigo = str_pad($item['codigo'] ?? ($i + 1), 4, '0', STR_PAD_LEFT);
+            $descricao = mb_strimwidth($item['descricao'], 0, 18, '');
+            $qtd = number_format($item['quantidade'], 2, ',', '');
+            $vlUnit = number_format($item['valor_unitario'], 2, ',', '');
+            $vlTotal = number_format($item['valor_total'], 2, ',', '');
+
+            $texto .= sprintf("%-4s %-18s %4s %6s %7s\n",
+                $codigo, $descricao, $qtd, $vlUnit, $vlTotal
+            );
+        }
+
+        $texto .= "--------------------------------\n";
+
+        // Totais
+        $subtotal = number_format($dadosCupom['totais']['subtotal'], 2, ',', '');
+        $desconto = number_format($dadosCupom['totais']['desconto'], 2, ',', '');
+        $total = number_format($dadosCupom['totais']['total'], 2, ',', '');
+
+        $texto .= "SUBTOTAL.............: R$ {$subtotal}\n";
+        if ($dadosCupom['totais']['desconto'] > 0) {
+            $texto .= "DESCONTO.............: R$ {$desconto}\n";
+        }
+        $texto .= "================================\n";
+        $texto .= "TOTAL A PAGAR........: R$ {$total}\n";
+        $texto .= "================================\n";
+
+        // Pagamentos
+        $texto .= "FORMA(S) DE PAGAMENTO:\n";
+        foreach ($dadosCupom['pagamentos'] as $pagamento) {
+            $valor = number_format($pagamento['valor'], 2, ',', '');
+            $texto .= "  {$pagamento['forma']}: R$ {$valor}\n";
+        }
+
+        $texto .= "--------------------------------\n";
+
+        // NFC-e / Dados fiscais
+        if (!empty($dadosCupom['nfe']['numero']) && $dadosCupom['nfe']['numero'] !== 'N/A') {
+            $texto .= "NFC-e Nº: {$dadosCupom['nfe']['numero']}\n";
+            $texto .= "SÉRIE: {$dadosCupom['nfe']['serie']}\n";
+            if (!empty($dadosCupom['nfe']['protocolo']) && $dadosCupom['nfe']['protocolo'] !== 'N/A') {
+                $texto .= "PROTOCOLO: {$dadosCupom['nfe']['protocolo']}\n";
+            }
+        }
+
+        // Contingência / Homologação
+        if ($contingencia) {
+            $texto .= "\n*** EMITIDA EM CONTINGÊNCIA ***\n";
+            $texto .= "SEM COMUNICAÇÃO COM A SEFAZ\n";
+        }
+
+        if (!empty($nfeConfig['ambiente']) && $nfeConfig['ambiente'] == 2) {
+            $texto .= "\n*** AMBIENTE DE HOMOLOGAÇÃO ***\n";
+        }
+
+        $texto .= "\n--------------------------------\n";
+
+        // QR Code (texto substituto)
+        if (!empty($dadosCupom['nfe']['qrcode'])) {
+            $texto .= "Consulta via QR Code:\n";
+            $texto .= "{$dadosCupom['nfe']['qrcode']}\n";
+        }
+
+        $texto .= "\n--------------------------------\n";
+        $texto .= "OBRIGADO PELA PREFERÊNCIA!\n";
+        $texto .= "Volte sempre :)\n";
+        $texto .= "================================\n\n\n";
+
+        return $texto;
     }
 
     public function render()

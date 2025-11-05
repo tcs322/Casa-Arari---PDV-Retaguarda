@@ -22,52 +22,61 @@ class SefaApiService
     /**
      * Envia NF-e para autorização (Síncrono)
      */
-    /**
-     * Envia NF-e para autorização (Síncrono)
-     */
-// No SefaApiService, atualize o método autorizarNFe:
-
-    /**
-     * Envia NF-e para autorização (Síncrono)
-     */
     public function autorizarNFe(string $xmlAssinado): array
     {
         try {
-            // ID do lote válido
             $idLote = $this->gerarIdLoteValido();
-            
             Log::info("📦 Transmitindo NF-e. Lote: {$idLote}");
-            
-            // Envia para SEFAZ
-            $response = $this->tools->sefazEnviaLote(
-                [$xmlAssinado],
-                $idLote,
-                1 // 1=Síncrono
-            );
 
-            // DEBUG: Salvar resposta bruta
-            file_put_contents(storage_path('logs/resposta_sefaz_bruta.txt'), $response);
-            Log::info("💾 Resposta bruta salva em: storage/logs/resposta_sefaz_bruta.txt");
-            Log::info("📏 Tamanho da resposta: " . strlen($response) . " bytes");
-            
-            // Tentar detectar se é HTML/erro
-            if (strpos($response, '<html') !== false || strpos($response, 'Error') !== false) {
-                Log::error('❌ SEFAZ retornou HTML/erro em vez de XML');
-                return [
-                    'success' => false,
-                    'erro' => 'SEFAZ retornou erro: ' . substr($response, 0, 200),
-                    'codigo_erro' => 'HTTP_ERROR'
-                ];
+            // Envia o lote para a SEFAZ
+            $response = $this->tools->sefazEnviaLote([$xmlAssinado], $idLote, 1);
+
+            // Se a SEFAZ respondeu com sucesso, processa normalmente
+            $resultado = $this->processarRespostaAutorizacao($response, $idLote);
+
+            // 🚀 Retorno padrão de sucesso
+            return [
+                'success' => true,
+                'tipo' => 'autorizada',
+                'chave_acesso' => $resultado['chave_acesso'] ?? null,
+                'numero_protocolo' => $resultado['numero_protocolo'] ?? null,
+                'xml' => $resultado['xml'] ?? null,
+                'mensagem' => 'NF-e autorizada com sucesso'
+            ];
+
+        } catch (\Exception $e) {
+            $mensagem = $e->getMessage();
+
+            // 🧭 Palavras-chave para detectar erro de comunicação / SEFAZ fora do ar
+            $indicadoresContingencia = [
+                'Could not connect', 'Connection refused', 'SSL',
+                'timeout', 'Could not resolve host',
+                'SEFAZ INDISPONÍVEL', 'Falha de conexão', 'SOAP'
+            ];
+
+            foreach ($indicadoresContingencia as $palavra) {
+                if (stripos($mensagem, $palavra) !== false) {
+                    Log::warning("⚙️ Entrando em contingência automática: {$mensagem}");
+
+                    return [
+                        'success' => false,
+                        'tipo' => 'contingencia',
+                        'erro' => 'Falha de comunicação com a SEFAZ',
+                        'mensagem' => 'Servidor SEFAZ indisponível - emitido em contingência',
+                        'codigo_erro' => 'CONTINGENCIA'
+                    ];
+                }
             }
 
-            return $this->processarRespostaAutorizacao($response, $idLote);
+            // ❌ Caso contrário, é uma rejeição ou erro de retorno SEFAZ
+            Log::error("❌ Erro ao autorizar NF-e: {$mensagem}");
 
-        } catch (Exception $e) {
-            Log::error('Erro ao autorizar NF-e: ' . $e->getMessage());
             return [
                 'success' => false,
-                'erro' => 'SEFAZ: ' . $e->getMessage(),
-                'codigo_erro' => $this->extrairCodigoErro($e->getMessage())
+                'tipo' => 'rejeitada',
+                'erro' => 'SEFAZ: ' . $mensagem,
+                'codigo_erro' => $this->extrairCodigoErro($mensagem),
+                'mensagem' => 'NF-e rejeitada pela SEFAZ'
             ];
         }
     }
@@ -297,6 +306,17 @@ class SefaApiService
                 $xMotivo = (string)$element->xMotivo;
                 
                 Log::info("📊 Status: cStat={$cStat}, xMotivo={$xMotivo}");
+
+                // ⚙️ Detectar status de contingência (SEFAZ fora do ar)
+                if (in_array($cStat, ['108', '109'])) {
+                    Log::warning("⚙️ SEFAZ INDISPONÍVEL - Código {$cStat}, modo contingência ativado");
+                    return [
+                        'success' => false,
+                        'modo_contingencia' => true,
+                        'erro' => "{$cStat} - {$xMotivo}",
+                        'codigo_erro' => $cStat
+                    ];
+                }
                 
                 // ✅ DEBUG: Verificar se campos existem
                 $nProt = $element->nProt ? (string)$element->nProt : 'NÃO ENCONTRADO';
@@ -563,5 +583,87 @@ class SefaApiService
         }
         
         return Certificate::readPfx($conteudo, $certificatePassword);
+    }
+
+    public function cancelarNFe(string $chaveAcesso, string $numeroProtocolo, string $justificativa, ?string $dataAutorizacao = null): array
+    {
+        try {
+            Log::info("🚫 Iniciando cancelamento da NF-e: {$chaveAcesso}");
+
+            // 1️⃣ Validação do tempo (até 30 minutos)
+            if ($dataAutorizacao) {
+                $autorizacao = \Carbon\Carbon::parse($dataAutorizacao);
+                $agora = now();
+
+                $diffMin = $agora->diffInMinutes($autorizacao);
+
+                if ($diffMin > 30) {
+                    Log::warning("⏱️ Tentativa de cancelamento após {$diffMin} minutos (limite: 30)");
+                    return [
+                        'success' => false,
+                        'erro' => 'Cancelamento não permitido: mais de 30 minutos após a autorização.',
+                        'codigo_erro' => 'LIMITE_TEMPO'
+                    ];
+                }
+            }
+
+            // 2️⃣ Envio do evento de cancelamento
+            Log::info("📤 Enviando evento de cancelamento para SEFAZ...");
+            $response = $this->tools->sefazCancela($chaveAcesso, $justificativa, $numeroProtocolo);
+
+            // 3️⃣ Salvar resposta bruta
+            file_put_contents(storage_path("logs/resposta_cancelamento_{$chaveAcesso}.xml"), $response);
+            Log::info("💾 Resposta de cancelamento salva em storage/logs/resposta_cancelamento_{$chaveAcesso}.xml");
+
+            // 4️⃣ Processar resposta
+            $xml = simplexml_load_string($response);
+            if ($xml === false) {
+                throw new Exception("Resposta inválida da SEFAZ no cancelamento.");
+            }
+
+            $xml->registerXPathNamespace('nfe', 'http://www.portalfiscal.inf.br/nfe');
+
+            $infEvento = $xml->xpath('//nfe:infEvento');
+            if (empty($infEvento)) {
+                $infEvento = $xml->xpath('//infEvento');
+            }
+
+            if (empty($infEvento)) {
+                throw new Exception("Estrutura de evento não encontrada na resposta da SEFAZ.");
+            }
+
+            $infEvento = $infEvento[0];
+            $cStat = (string) ($infEvento->cStat ?? '');
+            $xMotivo = (string) ($infEvento->xMotivo ?? '');
+            $nProt = (string) ($infEvento->nProt ?? '');
+
+            Log::info("📄 Cancelamento: cStat={$cStat}, xMotivo={$xMotivo}, nProt={$nProt}");
+
+            if ($cStat == '135' || $cStat == '136') {
+                Log::info("✅ NF-e cancelada com sucesso!");
+                return [
+                    'success' => true,
+                    'chave_acesso' => $chaveAcesso,
+                    'numero_protocolo_cancelamento' => $nProt,
+                    'mensagem' => $xMotivo,
+                    'xml_retorno' => $response,
+                    'data_cancelamento' => now()->format('Y-m-d H:i:s')
+                ];
+            }
+
+            return [
+                'success' => false,
+                'erro' => "{$cStat} - {$xMotivo}",
+                'codigo_erro' => $cStat
+            ];
+
+        } catch (Exception $e) {
+            Log::error("❌ Erro ao cancelar NF-e: " . $e->getMessage());
+            return [
+                'success' => false,
+                'erro' => 'Erro no cancelamento: ' . $e->getMessage(),
+                'codigo_erro' => 'EXCEPTION'
+            ];
+        }
     }
 }

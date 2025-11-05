@@ -17,7 +17,9 @@ class DashboardIndexAction
     public function exec(): array
     {
         $hoje = Carbon::today();
-        $totalDiario = Venda::whereDate('created_at', $hoje)->sum('valor_total');
+        $totalDiario = Venda::whereDate('created_at', $hoje)
+            ->whereIn('status', ['finalizada', 'pendente'])
+            ->sum('valor_total');
 
         return [
             'quantitativos' => [

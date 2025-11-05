@@ -16,6 +16,7 @@ class Cliente extends Model
         'uuid',
         'nome',
         'cpf',
+        'telefone',
         'data_nascimento',
     ];
 
@@ -26,6 +27,8 @@ class Cliente extends Model
 
     public function contarVendas(): int
     {
-        return $this->vendas()->count();
+        return $this->vendas()
+            ->where('status', '!=', 'cancelada')
+            ->count();
     }
 }

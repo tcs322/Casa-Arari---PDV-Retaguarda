@@ -21,6 +21,12 @@
         name="data_nascimento"
         :value="$cliente->data_nascimento ?? old('data_nascimento')"
     />
+    <x-layouts.inputs.input-normal-text
+        label="Telefone"
+        name="telefone"
+        lenght="6/12"
+        :value="$cliente->telefone ?? old('telefone')"
+    />
 </div>
 <br>
 <x-layouts.buttons.submit-button text="Salvar" />

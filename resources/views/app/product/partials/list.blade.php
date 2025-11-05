@@ -27,15 +27,6 @@
                     action="editar"
                     color="primary"
                     :route="route('produto.edit', $product->uuid)"/>
-                <x-layouts.buttons.action-button
-                    text="Excluir"
-                    action="excluir"
-                    color="danger"
-                    :identificador="'drawer-delete-confirmacao'"
-                    :route="route('produto.edit', [
-                        'uuid' => $product->uuid
-                    ])"
-                />
                 </td>
             </tr>
         @endforeach

@@ -37,6 +37,7 @@ class ClienteStoreRequest extends FormRequest
                     }
                 },
             ],
+            "telefone" => ["required", "string"],
             "data_nascimento"  => [
                 "required", "date"
             ]

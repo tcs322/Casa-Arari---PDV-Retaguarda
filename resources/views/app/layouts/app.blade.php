@@ -112,8 +112,41 @@
         @else
             {{ session('success') }}
         @endif
-        
     </div>
+    @endif
+
+    @if(session('warning'))
+        <div class="alert alert-warning">
+            @if(is_array(session('warning')))
+                <div class="mb-6 p-4 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded-lg">
+                    <div class="font-bold">Atenção!</div>
+                    <div>{{ session('warning.title') }}</div>
+                    <div>{{ session('warning.message') }}</div>
+                </div>
+            @else
+                <div class="mb-6 p-4 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded-lg">
+                    <div class="font-bold">Atenção!</div>
+                    <div>{{ session('warning') }}</div>
+                </div>
+            @endif
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="alert alert-danger">
+            @if(is_array(session('error')))
+                <div class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+                    <div class="font-bold">Erro!</div>
+                    <div>{{ session('error.title') }}</div>
+                    <div>{{ session('error.message') }}</div>
+                </div>
+            @else
+                <div class="mb-6 p-4 bg-red-100 border border-red-400 text-red-700 rounded-lg">
+                    <div class="font-bold">Erro!</div>
+                    <div>{{ session('error') }}</div>
+                </div>
+            @endif
+        </div>
     @endif
 
     <div>
@@ -148,7 +181,6 @@ MENU PRINCIPAL
                     <span class="ms-3">Dashboard</span>
                 </a>
             </li>
-            @if(auth()->check() && auth()->user()->isAdmin())
                 <li style="font-size: 13px">
                     <button   style="font-size: 13px" type="button" class="flex items-center w-full p-2 text-base text-gray-900 transition duration-75 rounded-lg group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700" aria-controls="dropdown-estrutura-organizacional" data-collapse-toggle="dropdown-estrutura-organizacional">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-building-fill-gear" viewBox="0 0 16 16">
@@ -161,9 +193,11 @@ MENU PRINCIPAL
                         </svg>
                     </button>
                     <ul id="dropdown-estrutura-organizacional" class="hidden py-2 space-y-2" style="font-size: 13px">
+                        @if(auth()->check() && auth()->user()->isAdmin())
                         <li>
                             <a href="{{route('fornecedor.index')}}" class="flex items-center w-full p-2 text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700">Fornecedores</a>
                         </li>
+                        @endif
                         <li>
                             <a href="{{route('cliente.index')}}" class="flex items-center w-full p-2 text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700">Clientes</a>
                         </li>
@@ -172,7 +206,6 @@ MENU PRINCIPAL
                         </li>
                     </ul>
                 </li>
-            @endif
             @if(auth()->check() && auth()->user()->isAdmin())
                 <li style="font-size: 13px">
                     <button   style="font-size: 13px" type="button" class="flex items-center w-full p-2 text-base text-gray-900 transition duration-75 rounded-lg group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700" aria-controls="dropdown-nfes" data-collapse-toggle="dropdown-nfes">
@@ -195,6 +228,7 @@ MENU PRINCIPAL
                     </ul>
                 </li>
             @endif
+            @if(auth()->check() && auth()->user()->isAdmin())
             <li style="font-size: 13px">
                 <button   style="font-size: 13px" type="button" class="flex items-center w-full p-2 text-base text-gray-900 transition duration-75 rounded-lg group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700" aria-controls="dropdown-example" data-collapse-toggle="dropdown-example">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-person-fill-gear" viewBox="0 0 16 16">
@@ -209,14 +243,9 @@ MENU PRINCIPAL
                     <li>
                         <a href="{{route('usuario.index')}}" class="flex items-center w-full p-2 text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700">Usuários</a>
                     </li>
-                    <li>
-                        <a href="{{route('usuario.index')}}" class="flex items-center w-full p-2 text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700">Perfis de Acesso</a>
-                    </li>
-                    <li>
-                        <a href="{{route('usuario.index')}}" class="flex items-center w-full p-2 text-gray-900 transition duration-75 rounded-lg pl-11 group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700">Permissões</a>
-                    </li>
                 </ul>
             </li>
+            @endif
             <li style="font-size: 13px">
                 <button   style="font-size: 13px" type="button" class="flex items-center w-full p-2 text-base text-gray-900 transition duration-75 rounded-lg group hover:bg-gray-100 dark:text-white dark:hover:bg-gray-700" aria-controls="dropdown-vendas" data-collapse-toggle="dropdown-vendas">
                     <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" class="bi bi-stickies-fill" viewBox="0 0 16 16">

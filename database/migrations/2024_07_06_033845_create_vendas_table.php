@@ -40,10 +40,14 @@ return new class extends Migration
             $table->string('chave_acesso_nfe', 44)->nullable()->comment('Chave de acesso da NF-e (44 dígitos)');
             $table->string('protocolo_nfe', 50)->nullable()->comment('Número do protocolo de autorização');
             $table->timestamp('data_autorizacao_nfe')->nullable()->comment('Data/hora da autorização');
+            $table->string('protocolo_cancelamento_nfe', 50)->nullable()->comment('Número do protocolo de cancelamento');
+            $table->timestamp('data_cancelamento_nfe')->nullable()->comment('Data/hora do cancelamento');
             $table->text('xml_nfe')->nullable()->comment('XML original enviado');
             $table->text('xml_autorizado')->nullable()->comment('XML autorizado com protocolo');
-            $table->enum('status_nfe', ['pendente', 'autorizada', 'rejeitada', 'cancelada', 'erro'])->default('pendente');
+            $table->enum('status_nfe', ['pendente', 'contingencia', 'autorizada', 'rejeitada', 'cancelada', 'erro'])->default('pendente');
             $table->text('erro_nfe')->nullable()->comment('Mensagem de erro em caso de rejeição');
+            $table->timestamp('ultima_tentativa_reenvio')->nullable();
+            $table->string('erro_reenvio_nfe')->nullable();
             
             $table->timestamps();
         });

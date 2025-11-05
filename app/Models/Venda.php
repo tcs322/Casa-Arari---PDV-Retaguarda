@@ -31,10 +31,14 @@ class Venda extends Model
         'chave_acesso_nfe',
         'protocolo_nfe',
         'data_autorizacao_nfe',
+        'protocolo_cancelamento_nfe',
+        'data_cancelamento_nfe',
         'xml_nfe',
         'xml_autorizado',
         'status_nfe',
-        'erro_nfe'
+        'erro_nfe',
+        'ultima_tentativa_reenvio',
+        'erro_reenvio_nfe'
     ];
 
     protected $casts = [
