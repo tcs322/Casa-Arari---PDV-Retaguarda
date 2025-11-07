@@ -401,7 +401,7 @@ class NFeGenerateService
      */
     private function getDestinatario(Venda $venda): array
     {
-        $ambiente = config('nfe.tpAmb', 2); // 2 = Homologação
+        $ambiente = config('nfe.ambiente', 2); // 2 = Homologação
         
         if ($ambiente == 2) {
             // ✅ HOMOLOGAÇÃO: nome fixo

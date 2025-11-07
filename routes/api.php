@@ -30,7 +30,7 @@ Route::post('/imprimir-direto', function (Request $request) {
     Log::info("🖨️ Iniciando impressão da venda #{$vendaId}");
 
     try {
-        $printerServerUrl = "http://host.docker.internal:8081";
+        $printerServerUrl = "http://host.docker.internal:8051";
         $payload = [
             'texto' => $texto,
             'impressora' => $impressora,

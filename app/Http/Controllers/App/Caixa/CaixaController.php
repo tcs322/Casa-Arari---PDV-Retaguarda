@@ -61,8 +61,8 @@ class CaixaController extends Controller
                 ->with('error', '⚠️ Não há nenhum caixa aberto no momento para ser fechado.');
         }
         
-        $dataInicio = now()->startOfDay();
-        $dataFim = now()->endOfDay();
+        $dataInicio = $caixaAberto->data_abertura;
+        $dataFim = now();
 
         $vendas = Venda::finalizadas()
             ->doPeriodo($dataInicio, $dataFim)
@@ -137,7 +137,7 @@ class CaixaController extends Controller
 
         // --- Tenta imprimir ---
         try {
-            $printerServerUrl = "http://host.docker.internal:8081";
+            $printerServerUrl = "http://host.docker.internal:8051";
             $payload = [
                 'texto' => $texto,
                 'impressora' => '71840', // ID da impressora padrão

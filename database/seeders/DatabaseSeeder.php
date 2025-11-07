@@ -13,12 +13,6 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             UserSeeder::class,
-            // ClienteSeeder::class,
-            // ContatoSeeder::class,
-            FornecedorSeeder::class,
-            // -------------------
-            // CompraSeeder::class,
-            // VendaSeeder::class,
         ]);
     }
 }

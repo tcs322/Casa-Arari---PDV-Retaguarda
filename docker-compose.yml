@@ -1,9 +1,10 @@
 version: "3.7"
+
 services:
     app_casa_arari:
         build:
             args:
-                user: luanramos
+                user: tecno
                 uid: 1000
             context: ./
             dockerfile: Dockerfile
@@ -24,6 +25,9 @@ services:
             - redis_casa_arari
         networks:
             - casa_arari_network
+        dns:
+            - 8.8.8.8
+            - 1.1.1.1
 
     npm:
         image: node:current-alpine
@@ -33,6 +37,9 @@ services:
         working_dir: /var/www/
         networks:
             - casa_arari_network
+        dns:
+            - 8.8.8.8
+            - 1.1.1.1
 
     nginx:
         image: nginx:alpine
@@ -45,10 +52,13 @@ services:
             - ./docker/nginx/:/etc/nginx/conf.d/
         networks:
             - casa_arari_network
+        dns:
+            - 8.8.8.8
+            - 1.1.1.1
 
     db_casa_arari:
         image: mysql
-        #        platform: linux/arm64/v8
+        # platform: linux/arm64/v8
         restart: unless-stopped
         expose:
             - 3308
@@ -62,11 +72,17 @@ services:
             - 3330:3308
         networks:
             - casa_arari_network
+        dns:
+            - 8.8.8.8
+            - 1.1.1.1
 
     redis_casa_arari:
         image: redis:latest
         networks:
             - casa_arari_network
+        dns:
+            - 8.8.8.8
+            - 1.1.1.1
 
 networks:
     casa_arari_network:
