@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\PedidoController;
 
 /*
 |--------------------------------------------------------------------------
@@ -51,4 +52,9 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 });
 
 Route::get('/produtos/cafeteria', [ProductController::class, 'listarCafeteria']);
+
+Route::get('/pedidos', [PedidoController::class, 'index']);
+Route::post('/pedidos', [PedidoController::class, 'store']);
+Route::post('/pedidos/{pedido}/preparado', [PedidoController::class, 'marcarComoPreparado']);
+
 
