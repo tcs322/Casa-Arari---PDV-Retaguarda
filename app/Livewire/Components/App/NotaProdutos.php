@@ -250,6 +250,7 @@ class NotaProdutos extends Component
             'codigo'          => $produto['cProd'],
             'nome_titulo'     => $produto['xProd'],
             'preco_compra'    => $produto['vUnCom'],
+            'preco_venda'    => $produto['vUnCom'],
             'estoque'         => $produto['qCom'],
             'fornecedor_uuid' => $this->fornecedor_uuid,
             'nota_uuid'       => $nota->uuid,
@@ -265,6 +266,7 @@ class NotaProdutos extends Component
             $registro->update([
                 'nome_titulo'     => $dadosProduto['nome_titulo'],
                 'preco_compra'    => $dadosProduto['preco_compra'],
+                'preco_venda'    => $produto['vUnCom'],
                 'estoque'         => $registro->estoque + $dadosProduto['estoque'],
                 'fornecedor_uuid' => $dadosProduto['fornecedor_uuid'],
                 // Não atualiza campos fiscais para produtos existentes

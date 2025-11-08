@@ -537,7 +537,7 @@ class SefaApiService
     {
         return [
             "atualizacao" => date('Y-m-d H:i:s'),
-            "tpAmb" => (int) config('nfe.ambiente', 2), // 1-Produção, 2-Homologação
+            "tpAmb" => (int) config('nfe.ambiente', 1), // 1-Produção, 2-Homologação
             "razaosocial" => config('nfe.razao_social'),
             "cnpj" => config('nfe.cnpj'),
             "siglaUF" => config('nfe.uf'),

@@ -322,7 +322,7 @@ class FrenteCaixaPagamento extends Component
                         ->orderBy('numero_nota_fiscal', 'desc') // ← CORREÇÃO: order by numero, não created_at
                         ->first();
         
-        return $ultimaNFe ? intval($ultimaNFe->numero_nota_fiscal) + 1 : 1300; // ← Começar de 1003
+        return $ultimaNFe ? intval($ultimaNFe->numero_nota_fiscal) + 1 : 1350; // ← Começar de 1003
     }
 
     private function imprimirVenda(int $vendaId, array $dadosCupom, bool $contingencia = false, string $impressora = '71840'): bool

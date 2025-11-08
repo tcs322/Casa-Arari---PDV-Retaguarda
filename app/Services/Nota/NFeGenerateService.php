@@ -25,7 +25,7 @@ class NFeGenerateService
 
         $this->config = [
             "atualizacao" => date('Y-m-d H:i:s'),
-            "tpAmb" => 2, // Homologação
+            "tpAmb" => (int) config('nfe.ambiente', 1), // Homologação
             "razaosocial" => config('nfe.razao_social'),
             "cnpj" => config('nfe.cnpj'),
             "siglaUF" => 'PA',
@@ -288,7 +288,7 @@ class NFeGenerateService
             <tpImp>1</tpImp>
             <tpEmis>1</tpEmis>
             <cDV>{$cDV}</cDV>
-            <tpAmb>2</tpAmb>
+            <tpAmb>1</tpAmb>
             <finNFe>1</finNFe>
             <indFinal>1</indFinal>
             <indPres>1</indPres>
