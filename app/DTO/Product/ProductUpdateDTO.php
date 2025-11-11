@@ -18,7 +18,7 @@ class ProductUpdateDTO
         public ?int $edicao,
         public string $tipo,
         public ?string $nota_uuid,
-        public string $fornecedor_uuid
+        public ?string $fornecedor_uuid
     ) {}
 
     public static function makeFromRequest(ProductUpdateRequest $request): self

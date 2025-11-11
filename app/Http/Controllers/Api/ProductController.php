@@ -10,9 +10,13 @@ class ProductController extends Controller
 {
     public function listarCafeteria(): JsonResponse
     {
-        $produtos = Product::where('tipo', 'CAFETERIA')
-                   ->orWhere('tipo', 'LIVRARIA')
-                   ->get();
+        $produtos = Product::where(function ($query) {
+                $query->where('tipo', 'CAFETERIA')
+                    ->orWhere('tipo', 'LIVRARIA');
+            })
+            ->where('estoque', '>', 0)
+            ->get();
+
 
         return response()->json([
             'success' => true,

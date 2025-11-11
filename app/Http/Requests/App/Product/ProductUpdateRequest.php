@@ -35,7 +35,6 @@ class ProductUpdateRequest extends FormRequest
             "edicao" => ["nullable", "integer"],
             "tipo" => ["required", new EnumKey(TipoProdutoEnum::class)],
             "nota_uuid" => ["nullable", "string"],
-            "fornecedor_uuid" => ["string"],
         ];
     }
 }
