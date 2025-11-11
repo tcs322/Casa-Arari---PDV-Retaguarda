@@ -10,6 +10,7 @@ class Pedido extends Model
         'cliente_nome',
         'itens',
         'status',
+        'valor_total',
     ];
 
     protected $casts = [

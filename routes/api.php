@@ -56,5 +56,6 @@ Route::get('/produtos/cafeteria', [ProductController::class, 'listarCafeteria'])
 Route::get('/pedidos', [PedidoController::class, 'index']);
 Route::post('/pedidos', [PedidoController::class, 'store']);
 Route::post('/pedidos/{pedido}/preparado', [PedidoController::class, 'marcarComoPreparado']);
+Route::get('/pedidos/todos', [PedidoController::class, 'allPedidos']);
 
 

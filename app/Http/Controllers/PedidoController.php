@@ -50,4 +50,9 @@ class PedidoController extends Controller
             'message' => 'Pedido marcado como preparado!',
         ]);
     }
+
+    public function allPedidos()
+    {
+        return Pedido::all();
+    }
 }
