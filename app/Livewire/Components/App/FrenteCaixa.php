@@ -31,8 +31,11 @@ class FrenteCaixa extends Component
             return;
         }
 
-        $this->produtosEncontrados = Product::where('nome_titulo', 'like', '%' . $this->search . '%')
-            ->orWhere('codigo', 'like', '%' . $this->search . '%')
+        $this->produtosEncontrados = Product::where(function ($query) {
+                $query->where('nome_titulo', 'like', '%' . $this->search . '%')
+                    ->orWhere('codigo', 'like', '%' . $this->search . '%');
+            })
+            ->where('estoque', '>', 0) // 🧠 garante que só produtos com estoque positivo apareçam
             ->limit(10)
             ->get()
             ->toArray();
