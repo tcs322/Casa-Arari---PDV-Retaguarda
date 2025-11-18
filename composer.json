@@ -9,6 +9,7 @@
         "akaunting/laravel-money": "^5.2",
         "arielmejiadev/larapex-charts": "^8.1",
         "asantibanez/livewire-charts": "^4.1",
+        "barryvdh/laravel-dompdf": "^3.1",
         "bensampo/laravel-enum": "^6.6",
         "diglactic/laravel-breadcrumbs": "^8.1",
         "guzzlehttp/guzzle": "^7.2",
