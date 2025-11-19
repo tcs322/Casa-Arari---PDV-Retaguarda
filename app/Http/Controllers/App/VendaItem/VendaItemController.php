@@ -36,25 +36,41 @@ class VendaItemController extends Controller
             ->with('produto')
             ->get();
 
+        // Agrupar por produto_uuid
         $agrupado = $vendaItens->groupBy('produto_uuid')->map(function ($items) {
             return [
                 'produto' => $items->first()->produto->nome_titulo ?? 'Produto removido',
                 'quantidade_total' => $items->sum('quantidade'),
+                // soma dos subtotais *registro a registro* para esse produto
+                'subtotal_total' => $items->sum(function ($i) {
+                    return (float) $i->subtotal;
+                }),
                 'tipo' => $items->first()->produto->tipo ?? null,
             ];
+        });
+
+        // total geral (soma de todos os subtotais dos registros retornados)
+        $totalGeral = $vendaItens->sum(function ($i) {
+            return (float) $i->subtotal;
         });
 
         return view('app.venda.venda-item.show', [
             'agrupado' => $agrupado,
             'data_inicio' => $request->data_inicio,
             'data_fim' => $request->data_fim,
-            'tipo' => $request->tipo
+            'tipo' => $request->tipo,
+            'totalGeral' => $totalGeral,
         ]);
     }
 
     public function exportPdf(Request $request)
     {
-        // Mesma busca feita no getByPeriod
+        $request->validate([
+            'data_inicio' => 'required|date',
+            'data_fim' => 'required|date|after_or_equal:data_inicio',
+            'tipo' => 'nullable|string|in:LIVRARIA,CAFETERIA'
+        ]);
+
         $dataInicio = $request->data_inicio . ' 00:00:00';
         $dataFim = $request->data_fim . ' 23:59:59';
 
@@ -73,15 +89,25 @@ class VendaItemController extends Controller
             return [
                 'produto' => $items->first()->produto->nome_titulo ?? 'Produto removido',
                 'quantidade_total' => $items->sum('quantidade'),
+                // soma dos subtotais dos registros desse produto
+                'subtotal_total' => $items->sum(function ($i) {
+                    return (float) $i->subtotal;
+                }),
                 'tipo' => $items->first()->produto->tipo ?? null,
             ];
+        });
+
+        // total geral (soma exata de todos os subtotais registro a registro)
+        $totalGeral = $vendaItens->sum(function ($i) {
+            return (float) $i->subtotal;
         });
 
         $pdf = Pdf::loadView('app.venda.venda-item.pdf', [
             'agrupado' => $agrupado,
             'data_inicio' => $request->data_inicio,
             'data_fim' => $request->data_fim,
-            'tipo' => $request->tipo
+            'tipo' => $request->tipo,
+            'totalGeral' => $totalGeral,
         ]);
 
         return $pdf->download('relatorio-produtos-vendidos.pdf');
