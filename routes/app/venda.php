@@ -11,6 +11,13 @@ Route::middleware(['caixa_aberto'])->group(function () {
     Route::get('frente-caixa/pagamento', [\App\Http\Controllers\App\Venda\VendaController::class, 'pagamento'])->name('frente-caixa.pagamento');
 });
 
+
+
+Route::get('/vendas/search', [\App\Http\Controllers\App\Venda\VendaController::class, 'search'])->name('vendas.search');
+Route::get('/vendas/period', [\App\Http\Controllers\App\Venda\VendaController::class, 'getByPeriod'])->name('vendas.by_period');
+Route::get('/vendas/period/pdf', [\App\Http\Controllers\App\Venda\VendaController::class, 'exportPdf'])->name('vendas.by_period_pdf');
+
+
 // venda itens
 
 // Formulário de busca
@@ -22,3 +29,5 @@ Route::get('/venda-itens/period', [\App\Http\Controllers\App\VendaItem\VendaItem
 // Exportar PDF
 Route::get('/venda-itens/period/pdf', [\App\Http\Controllers\App\VendaItem\VendaItemController::class, 'exportPdf'])
     ->name('venda_itens.by_period_pdf');
+
+
