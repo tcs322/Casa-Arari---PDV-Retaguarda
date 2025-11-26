@@ -6,8 +6,10 @@ use App\Actions\Venda\VendaAction;
 use App\DTO\Venda\VendaShowDTO;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\App\Venda\VendaShowRequest;
+use App\Models\User;
 use App\Models\Venda;
 use App\Services\Nota\SefaApiService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -206,5 +208,124 @@ class VendaController extends Controller
         $texto .= "================================\n\n\n";
 
         return $texto;
+    }
+
+    public function search()
+    {
+        $users = User::orderBy('name')->get(); // ajuste o campo nome se for diferente
+        // formas de pagamento — ajuste se você tiver uma tabela ou consts
+        $formas = [
+            'DINHEIRO' => 'Dinheiro',
+            'CARTAO' => 'Cartão',
+            'PIX' => 'PIX',
+            'OUTRO' => 'Outro',
+        ];
+
+        return view('app.venda.search', [
+            'users' => $users,
+            'formas' => $formas,
+        ]);
+    }
+
+    // Resultado da busca (lista de vendas no período)
+    public function getByPeriod(Request $request)
+    {
+        $request->validate([
+            'data_inicio' => 'required|date',
+            'data_fim' => 'required|date|after_or_equal:data_inicio',
+            'usuario_uuid' => 'nullable|string',
+            'forma_pagamento' => 'nullable|string',
+        ]);
+
+        $dataInicio = $request->data_inicio . ' 00:00:00';
+        $dataFim = $request->data_fim . ' 23:59:59';
+
+        $query = Venda::with(['usuario', 'itens'])
+            ->whereBetween('data_venda', [$dataInicio, $dataFim]);
+
+        if ($request->usuario_uuid) {
+            $query->where('usuario_uuid', $request->usuario_uuid);
+        }
+
+        if ($request->forma_pagamento) {
+            $query->where('forma_pagamento', $request->forma_pagamento);
+        }
+
+        $vendas = $query->orderBy('data_venda', 'asc')->get();
+
+        // Para cada venda, calcular subtotal exato somando os subtotais dos itens (registro a registro)
+        $vendas = $vendas->map(function ($venda) {
+            $subtotal = (float) $venda->itens->sum(function ($i) {
+                return (float) $i->subtotal;
+            });
+
+            // opcional: formato de exibição da data, se quiser
+            $venda->calculated_subtotal = $subtotal;
+            return $venda;
+        });
+
+        // totalGeral = soma dos subtotais calculados de cada venda
+        $totalGeral = $vendas->sum(function ($v) {
+            return (float) $v->calculated_subtotal;
+        });
+
+        return view('app.venda.show-by-period', [
+            'vendas' => $vendas,
+            'data_inicio' => $request->data_inicio,
+            'data_fim' => $request->data_fim,
+            'usuario_uuid' => $request->usuario_uuid,
+            'forma_pagamento' => $request->forma_pagamento,
+            'totalGeral' => $totalGeral,
+        ]);
+    }
+
+    // Exportar PDF com a mesma lógica
+    public function exportPdf(Request $request)
+    {
+        $request->validate([
+            'data_inicio' => 'required|date',
+            'data_fim' => 'required|date|after_or_equal:data_inicio',
+            'usuario_uuid' => 'nullable|string',
+            'forma_pagamento' => 'nullable|string',
+        ]);
+
+        $dataInicio = $request->data_inicio . ' 00:00:00';
+        $dataFim = $request->data_fim . ' 23:59:59';
+
+        $query = Venda::with(['usuario', 'itens'])
+            ->whereBetween('data_venda', [$dataInicio, $dataFim]);
+
+        if ($request->usuario_uuid) {
+            $query->where('usuario_uuid', $request->usuario_uuid);
+        }
+
+        if ($request->forma_pagamento) {
+            $query->where('forma_pagamento', $request->forma_pagamento);
+        }
+
+        $vendas = $query->orderBy('data_venda', 'asc')->get();
+
+        $vendas = $vendas->map(function ($venda) {
+            $subtotal = (float) $venda->itens->sum(function ($i) {
+                return (float) $i->subtotal;
+            });
+            $venda->calculated_subtotal = $subtotal;
+            return $venda;
+        });
+
+        $totalGeral = $vendas->sum(function ($v) {
+            return (float) $v->calculated_subtotal;
+        });
+
+        $pdf = Pdf::loadView('app.venda.pdf', [
+            'vendas' => $vendas,
+            'data_inicio' => $request->data_inicio,
+            'data_fim' => $request->data_fim,
+            'usuario_uuid' => $request->usuario_uuid,
+            'forma_pagamento' => $request->forma_pagamento,
+            'totalGeral' => $totalGeral,
+        ]);
+
+        return $pdf->download('relatorio-vendas-'.date('Ymd_His').'.pdf');
     }
 }
