@@ -149,4 +149,48 @@ class PedidoController extends Controller
             'pedido'  => $pedido,
         ]);
     }
+
+    public function find(string $id)
+    {
+        $pedido = Pedido::find($id);
+
+        if (!$pedido) {
+            return response()->json([
+                'message' => 'Pedido não encontrado.'
+            ], 404);
+        }
+
+        return response()->json([
+            'message' => 'Pedido encontrado com sucesso.',
+            'data' => $pedido
+        ]);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'cliente_nome' => 'required|string|max:255',
+            'itens'        => 'required|array|min:1',
+            'valor_total'  => 'nullable|numeric|min:0',
+        ]);
+
+        $pedido = Pedido::findOrFail($id);
+
+        // Calcula total com base nos itens enviados
+        $novoTotal = collect($validated['itens'])->reduce(function ($carry, $item) {
+            return $carry + ($item['preco'] * $item['quantidade']);
+        }, 0);
+
+        // Atualiza completamente os itens, sem merge
+        $pedido->update([
+            'cliente_nome' => $validated['cliente_nome'],
+            'itens'        => $validated['itens'],  // <-- SUBSTITUI TUDO
+            'valor_total'  => $novoTotal,
+        ]);
+
+        return response()->json([
+            'message' => 'Pedido atualizado com sucesso (substituição completa).',
+            'pedido'  => $pedido,
+        ]);
+    }
 }
