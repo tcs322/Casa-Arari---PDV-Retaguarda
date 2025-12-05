@@ -57,5 +57,8 @@ Route::get('/pedidos', [PedidoController::class, 'index']);
 Route::post('/pedidos', [PedidoController::class, 'storeOrUpdate']);
 Route::post('/pedidos/{pedido}/preparado', [PedidoController::class, 'marcarComoPreparado']);
 Route::get('/pedidos/todos', [PedidoController::class, 'allPedidos']);
+Route::get('/pedidos/{id}', [PedidoController::class, 'find']);
+Route::put('/pedidos/{id}', [PedidoController::class, 'update']);
+
 
 
