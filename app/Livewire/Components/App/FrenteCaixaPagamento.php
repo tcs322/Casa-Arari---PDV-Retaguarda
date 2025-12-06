@@ -132,6 +132,55 @@ class FrenteCaixaPagamento extends Component
 
         try {
             // 1. Cria a venda
+            // $venda = Venda::create([
+            //     'uuid' => Str::uuid(),
+            //     'usuario_uuid' => $this->usuario['uuid'],
+            //     'cliente_uuid' => $this->cliente['uuid'],
+            //     'forma_pagamento' => $this->formaPagamento,
+            //     'bandeira_cartao' => $this->ehCartao ? $this->bandeiraCartao : null,
+            //     'quantidade_parcelas' => $this->ehCartao ? $this->parcelas : null,
+            //     'valor_total' => $this->total,
+            //     'valor_recebido' => $this->ehDinheiro ? $this->valorRecebido : $this->total,
+            //     'troco' => $this->ehDinheiro ? $this->troco : 0,
+            //     'numero_nota_fiscal' => $this->proximoNumeroNota(),
+            //     'serie_nfe' => $this->seriePadrao(),
+            //     'status' => 'finalizada', // valor inicial
+            //     'observacoes' => $this->observacoes,
+            //     'data_venda' => now(),
+            // ]);
+
+            // // 2. Cria os itens da venda
+            // foreach ($this->carrinho as $item) {
+            //     $valor_total = $item['preco'] * $item['quantidade'];
+            //     $valor_total_formatado = number_format($valor_total, 2, '.');
+
+            //     VendaItem::create([
+            //         'uuid' => Str::uuid(),
+            //         'venda_uuid' => $venda->uuid,
+            //         'produto_uuid' => $item['uuid'],
+            //         'quantidade' => $item['quantidade'],
+            //         'preco_unitario' => $item['preco'],
+            //         'preco_total' => $valor_total_formatado,
+            //         'subtotal' => $item['subtotal'],
+            //         'desconto' => $item['desconto'] ?? 0,
+            //         'tipo_desconto' => $item['tipo_desconto'] ?? 'percentual'
+            //     ]);
+
+            //     // Atualiza estoque
+            //     $produto = Product::where('uuid', $item['uuid'])->first();
+            //     if ($produto) {
+            //         $produto->decrement('estoque', $item['quantidade']);
+            //     }
+            // }
+
+            // Log::info("✅ Venda criada: {$venda->uuid}");
+
+            // // 3. Processar NF-e
+            // $nfeService = new NFeGenerateService();
+            // $resultado = $nfeService->emitirNFe($venda);
+            // Log::info("📋 Resultado NF-e:", $resultado);
+
+            // 1. Cria a venda
             $venda = Venda::create([
                 'uuid' => Str::uuid(),
                 'usuario_uuid' => $this->usuario['uuid'],
@@ -139,31 +188,31 @@ class FrenteCaixaPagamento extends Component
                 'forma_pagamento' => $this->formaPagamento,
                 'bandeira_cartao' => $this->ehCartao ? $this->bandeiraCartao : null,
                 'quantidade_parcelas' => $this->ehCartao ? $this->parcelas : null,
-                'valor_total' => $this->total,
+                'valor_total' => $this->total, // ✅ total correto vindo do carrinho
                 'valor_recebido' => $this->ehDinheiro ? $this->valorRecebido : $this->total,
                 'troco' => $this->ehDinheiro ? $this->troco : 0,
                 'numero_nota_fiscal' => $this->proximoNumeroNota(),
                 'serie_nfe' => $this->seriePadrao(),
-                'status' => 'finalizada', // valor inicial
+                'status' => 'finalizada',
                 'observacoes' => $this->observacoes,
                 'data_venda' => now(),
             ]);
 
             // 2. Cria os itens da venda
             foreach ($this->carrinho as $item) {
-                $valor_total = $item['subtotal'] * $item['quantidade'];
-                $valor_total_formatado = number_format($valor_total, 2, '.');
+                // ✅ preço total do item = preço unitário × quantidade
+                $precoTotal = $item['preco'] * $item['quantidade'];
 
                 VendaItem::create([
                     'uuid' => Str::uuid(),
                     'venda_uuid' => $venda->uuid,
                     'produto_uuid' => $item['uuid'],
                     'quantidade' => $item['quantidade'],
-                    'preco_unitario' => $item['preco'],
-                    'preco_total' => $valor_total_formatado,
-                    'subtotal' => $item['subtotal'],
+                    'preco_unitario' => $item['preco'],      // ✅ sempre o preço de venda unitário
+                    'preco_total' => $precoTotal,            // ✅ total por item (sem formatação)
+                    'subtotal' => $item['subtotal'],         // ✅ valor líquido (após desconto, se houver)
                     'desconto' => $item['desconto'] ?? 0,
-                    'tipo_desconto' => $item['tipo_desconto'] ?? 'percentual'
+                    'tipo_desconto' => $item['tipo_desconto'] ?? 'percentual',
                 ]);
 
                 // Atualiza estoque
@@ -179,6 +228,7 @@ class FrenteCaixaPagamento extends Component
             $nfeService = new NFeGenerateService();
             $resultado = $nfeService->emitirNFe($venda);
             Log::info("📋 Resultado NF-e:", $resultado);
+
 
             DB::commit();
 

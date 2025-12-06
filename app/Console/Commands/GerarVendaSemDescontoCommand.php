@@ -1,0 +1,123 @@
+<?php
+
+namespace App\Console\Commands;
+
+use Illuminate\Console\Command;
+use Illuminate\Support\Str;
+use App\Models\Venda;
+use App\Models\VendaItem;
+use App\Models\Product;
+use App\Models\User;
+use App\Models\Cliente;
+use App\Services\Nota\NFeGenerateService;
+
+class GerarVendaSemDescontoCommand extends Command
+{
+    /**
+     * O nome e a assinatura do comando.
+     *
+     * @var string
+     */
+    protected $signature = 'teste:gerar-venda-sem-desconto';
+
+    /**
+     * A descrição do comando.
+     *
+     * @var string
+     */
+    protected $description = 'Gera uma venda fictícia sem descontos e exibe o XML completo da NF-e no terminal.';
+
+    /**
+     * Executa o comando.
+     */
+    public function handle()
+    {
+        $this->info('🧾 Gerando venda fictícia SEM DESCONTO para teste de NF-e...');
+
+        // Busca ou cria usuário e cliente
+        $usuario = \App\Models\User::first() ?? \App\Models\User::factory()->create();
+        $cliente = \App\Models\Cliente::first() ?? \App\Models\Cliente::factory()->create();
+
+        // Cria produtos se necessário
+        if (Product::count() < 2) {
+            Product::factory()->count(2)->create();
+        }
+
+        $produtos = Product::take(2)->get();
+
+        // Itens de teste (sem desconto)
+        $itens = [
+            [
+                'produto' => $produtos[0],
+                'quantidade' => 1,
+                'preco' => 20.00,
+                'subtotal' => 20.00,
+                'desconto' => 0,
+                'tipo_desconto' => 'percentual',
+            ],
+            [
+                'produto' => $produtos[1],
+                'quantidade' => 2,
+                'preco' => 15.00,
+                'subtotal' => 15.00,
+                'desconto' => 0,
+                'tipo_desconto' => 'percentual',
+            ],
+        ];
+
+        // Valor total = soma de (subtotal * quantidade)
+        $valorTotal = collect($itens)->sum(fn ($i) => $i['subtotal'] * $i['quantidade']);
+
+        // Cria venda
+        $venda = Venda::create([
+            'uuid' => Str::uuid(),
+            'usuario_uuid' => $usuario->uuid ?? $usuario->id,
+            'cliente_uuid' => $cliente->uuid ?? $cliente->id,
+            'forma_pagamento' => 'dinheiro',
+            'valor_total' => $valorTotal,
+            'valor_recebido' => $valorTotal,
+            'troco' => 0,
+            'numero_nota_fiscal' => rand(1000, 9999),
+            'serie_nfe' => '1',
+            'status' => 'finalizada',
+            'data_venda' => now(),
+        ]);
+
+        // Cria itens
+        foreach ($itens as $item) {
+            VendaItem::create([
+                'uuid' => Str::uuid(),
+                'venda_uuid' => $venda->uuid,
+                'produto_uuid' => $item['produto']->uuid,
+                'quantidade' => $item['quantidade'],
+                'preco_unitario' => $item['preco'],
+                'preco_total' => $item['preco'] * $item['quantidade'],
+                'subtotal' => $item['subtotal'],
+                'desconto' => $item['desconto'],
+                'tipo_desconto' => $item['tipo_desconto'],
+            ]);
+        }
+
+        $this->info("✅ Venda de teste criada: {$venda->uuid}");
+        $this->info("💰 Valor total: R$ " . number_format($valorTotal, 2, ',', '.'));
+
+        // Gera XML
+        $this->line("\n🚀 Gerando XML com NFeGenerateService...");
+        $nfeService = new NFeGenerateService();
+        $xml = $nfeService->gerarXml($venda);
+
+        // Exibe XML no terminal formatado
+        $this->newLine(2);
+        $this->info("📄 XML GERADO:");
+        $this->newLine();
+
+        $dom = new \DOMDocument();
+        $dom->preserveWhiteSpace = false;
+        $dom->formatOutput = true;
+        $dom->loadXML($xml);
+
+        $this->line($dom->saveXML());
+        $this->newLine();
+        $this->info('✅ Teste concluído com sucesso!');
+    }
+}

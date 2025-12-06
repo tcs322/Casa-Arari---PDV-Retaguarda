@@ -437,86 +437,115 @@ class NFeGenerateService
     }
 
     /**
-     * Monta os produtos da venda
+     * Monta os produtos da venda (corrigido para apresentar vProd bruto e vDesc)
      */
     private function getProdutos(Venda $venda): string
     {
         $produtosXml = '';
-        $itens = $venda->itens; // Assumindo relação com itens da venda
-        
+        $itens = $venda->itens;
+
         foreach ($itens as $index => $item) {
             $nItem = $index + 1;
-            $valorPIS = number_format($item->preco_total * 0.0165, 2, '.', '');
-            $valorCOFINS = number_format($item->preco_total * 0.0760, 2, '.', '');
-            $qCom = number_format($item->quantidade, 4, '.', '');
 
-            $preco_unitario = $item->preco_unitario - $item->desconto;
+            // Preço unitário e quantidade com precisão adequada
+            $precoUnitario = number_format((float)$item->preco_unitario, 2, '.', '');
+            $quantidade = number_format((float)$item->quantidade, 4, '.', '');
+
+            // Valor bruto do produto (sem desconto)
+            $vProdBruto = number_format((float)$item->preco_unitario * (float)$item->quantidade, 2, '.', '');
+
+            // Valor da base de cálculo (vBC)
+            $vBC = number_format((float)$item->preco_unitario * (float)$item->quantidade, 2, '.', '');
+
+            // Cálculo dos tributos
+            $valorPIS = number_format((float)$vBC * 0.0165, 2, '.', '');
+            $valorCOFINS = number_format((float)$vBC * 0.0760, 2, '.', '');
+
 
             $produtosXml .= <<<XML
-    <det nItem="{$nItem}">
-    <prod>
-        <cProd>{$item->produto->codigo}</cProd>
-        <cEAN>7890000000000</cEAN>
-        <xProd>{$item->produto->nome_titulo}</xProd>
-        <NCM>49019900</NCM>
-        <CEST>2800300</CEST>
-        <CFOP>5102</CFOP>
-        <uCom>UN</uCom>
-        <qCom>{$qCom}</qCom>
-        <vUnCom>{$item->subtotal}</vUnCom>
-        <vProd>{$item->preco_total}</vProd>
-        <cEANTrib>7890000000000</cEANTrib>
-        <uTrib>UN</uTrib>
-        <qTrib>{$qCom}</qTrib>
-        <vUnTrib>{$item->subtotal}</vUnTrib>
-        <indTot>1</indTot>
-    </prod>
-    <imposto>
-        <vTotTrib>0.00</vTotTrib>
-        <ICMS>
-        <ICMSSN102>
-            <orig>0</orig>
-            <CSOSN>102</CSOSN>
-        </ICMSSN102>
-        </ICMS>
-        <PIS>
-        <PISAliq>
-            <CST>01</CST>
-            <vBC>{$item->preco_total}</vBC>
-            <pPIS>1.65</pPIS>
-            <vPIS>{$valorPIS}</vPIS>
-        </PISAliq>
-        </PIS>
-        <COFINS>
-        <COFINSAliq>
-            <CST>01</CST>
-            <vBC>{$item->preco_total}</vBC>
-            <pCOFINS>7.60</pCOFINS>
-            <vCOFINS>{$valorCOFINS}</vCOFINS>
-        </COFINSAliq>
-        </COFINS>
-    </imposto>
-    </det>
-XML;
+            <det nItem="{$nItem}">
+            <prod>
+                <cProd>{$item->produto->codigo}</cProd>
+                <cEAN>7890000000000</cEAN>
+                <xProd>{$item->produto->nome_titulo}</xProd>
+                <NCM>49019900</NCM>
+                <CEST>2800300</CEST>
+                <CFOP>5102</CFOP>
+                <uCom>UN</uCom>
+                <qCom>{$quantidade}</qCom>
+                <vUnCom>{$precoUnitario}</vUnCom>
+                <vProd>{$vProdBruto}</vProd>
+                <cEANTrib>7890000000000</cEANTrib>
+                <uTrib>UN</uTrib>
+                <qTrib>{$quantidade}</qTrib>
+                <vUnTrib>{$precoUnitario}</vUnTrib>
+                <indTot>1</indTot>
+            </prod>
+            <imposto>
+                <vTotTrib>0.00</vTotTrib>
+                <ICMS>
+                    <ICMSSN102>
+                        <orig>0</orig>
+                        <CSOSN>102</CSOSN>
+                    </ICMSSN102>
+                </ICMS>
+                <PIS>
+                    <PISAliq>
+                        <CST>01</CST>
+                        <vBC>{$vBC}</vBC>
+                        <pPIS>1.65</pPIS>
+                        <vPIS>{$valorPIS}</vPIS>
+                    </PISAliq>
+                </PIS>
+                <COFINS>
+                    <COFINSAliq>
+                        <CST>01</CST>
+                        <vBC>{$vBC}</vBC>
+                        <pCOFINS>7.60</pCOFINS>
+                        <vCOFINS>{$valorCOFINS}</vCOFINS>
+                    </COFINSAliq>
+                </COFINS>
+            </imposto>
+            </det>
+        XML;
         }
 
         return $produtosXml;
     }
 
     /**
-     * Calcula totais da venda
+     * Calcula totais da venda (soma por itens para manter coerência)
      */
     private function getTotal(Venda $venda): array
     {
-        $valorProdutos = $venda->valor_total;
-        $valorPIS = $valorProdutos * 0.0165;
-        $valorCOFINS = $valorProdutos * 0.0760;
+        $valorProdutosBruto = 0.0;
+        $valorDescontos = 0.0;
+        $valorPIS = 0.0;
+        $valorCOFINS = 0.0;
+
+        foreach ($venda->itens as $item) {
+            $vProdBruto = (float)$item->preco_unitario * (float)$item->quantidade;
+            $vLiquido = (float)$item->preco_total; // já representa subtotal * quantidade (valor vendido)
+            $vDescItem = max(0.0, $vProdBruto - $vLiquido);
+
+            // Acumula
+            $valorProdutosBruto += $vProdBruto;
+            $valorDescontos += $vDescItem;
+
+            // PIS/COFINS com base no valor líquido
+            $valorPIS += $vLiquido * 0.0165;
+            $valorCOFINS += $vLiquido * 0.0760;
+        }
+
+        // Valor final (vNF) — confiança no campo valor_total da venda (deve ser vProdBruto - descontos + frete/outros)
+        $valorTotalNota = $valorProdutosBruto;
 
         return [
-            'valor_produtos' => number_format($valorProdutos, 2, '.', ''),
+            'valor_produtos' => number_format($valorProdutosBruto, 2, '.', ''),
+            'valor_descontos' => number_format($valorDescontos, 2, '.', ''),
             'valor_pis' => number_format($valorPIS, 2, '.', ''),
             'valor_cofins' => number_format($valorCOFINS, 2, '.', ''),
-            'valor_total' => number_format($valorProdutos, 2, '.', '')
+            'valor_total' => number_format($valorTotalNota, 2, '.', ''),
         ];
     }
 
@@ -567,7 +596,7 @@ XML;
         
         $config = [
             "atualizacao" => date('Y-m-d H:i:s'),
-            "tpAmb" => 2,
+            "tpAmb" => (int) config('nfe.ambiente', 1),
             "razaosocial" => config('nfe.razao_social'),
             "cnpj" => config('nfe.cnpj'),
             "siglaUF" => 'PA',

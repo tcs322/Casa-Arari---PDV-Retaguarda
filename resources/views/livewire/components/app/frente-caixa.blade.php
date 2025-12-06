@@ -361,10 +361,10 @@
                         <span class="font-semibold">{{ count($carrinho) }}</span>
                     </div>
                     
-                    <div class="flex justify-between items-center py-2 border-t">
+                    <!-- <div class="flex justify-between items-center py-2 border-t">
                         <span class="text-gray-600">Subtotal:</span>
                         <span class="font-semibold">R$ {{ number_format(array_sum(array_column($carrinho, 'subtotal')), 2, ',', '.') }}</span>
-                    </div>
+                    </div> -->
                     
                     @if($descontoGeral > 0)
                     <div class="flex justify-between items-center py-2 text-red-600">

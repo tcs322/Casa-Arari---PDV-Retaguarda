@@ -153,16 +153,25 @@ class FrenteCaixa extends Component
         $index = array_search($produtoId, array_column($this->carrinho, 'id'));
         
         if ($index !== false) {
+            // Se já existe, apenas incrementa a quantidade
             $this->carrinho[$index]['quantidade']++;
+
+            // Atualiza o preco_total (subtotal * quantidade)
+            $this->carrinho[$index]['preco_total'] =
+                $this->carrinho[$index]['subtotal'] * $this->carrinho[$index]['quantidade'];
         } else {
+            // Caso seja um novo item
+            $precoUnitario = $produto->preco_venda;
+
             $this->carrinho[] = [
                 'id' => $produto->id,
                 'uuid' => $produto->uuid,
                 'codigo' => $produto->codigo,
                 'nome' => $produto->nome_titulo,
-                'preco' => $produto->preco_venda,
+                'preco' => $precoUnitario,
                 'quantidade' => 1,
-                'subtotal' => $produto->preco_venda,
+                'subtotal' => $precoUnitario, // valor unitário
+                'preco_total' => $precoUnitario, // subtotal * quantidade
                 'desconto' => $this->descontoGeral,
                 'tipo_desconto' => $this->tipoDescontoGeral
             ];
@@ -173,6 +182,19 @@ class FrenteCaixa extends Component
         $this->produtosEncontrados = [];
     }
 
+    // public function atualizarQuantidade($index, $quantidade)
+    // {
+    //     if ($quantidade < 1) {
+    //         unset($this->carrinho[$index]);
+    //         $this->carrinho = array_values($this->carrinho);
+    //     } else {
+    //         $this->carrinho[$index]['quantidade'] = $quantidade;
+    //         $this->carrinho[$index]['subtotal'] = $this->carrinho[$index]['preco'] * $quantidade;
+    //     }
+
+    //     $this->calcularTotal();
+    // }
+
     public function atualizarQuantidade($index, $quantidade)
     {
         if ($quantidade < 1) {
@@ -180,7 +202,8 @@ class FrenteCaixa extends Component
             $this->carrinho = array_values($this->carrinho);
         } else {
             $this->carrinho[$index]['quantidade'] = $quantidade;
-            $this->carrinho[$index]['subtotal'] = $this->carrinho[$index]['preco'] * $quantidade;
+            $this->carrinho[$index]['preco_total'] =
+                $this->carrinho[$index]['subtotal'] * $quantidade;
         }
 
         $this->calcularTotal();
@@ -227,65 +250,42 @@ class FrenteCaixa extends Component
     {
         $total = 0;
 
-        // 1️⃣ Calcula subtotais individuais com descontos próprios
+        // 1️⃣ Calcula o preço total de cada item com descontos individuais
         foreach ($this->carrinho as $index => $item) {
-            $subtotal = $item['preco'] * $item['quantidade'];
-            
+            $precoUnitario = $item['preco'];
+
+            // Aplica desconto individual (se houver)
             if ($item['desconto'] > 0) {
                 if ($item['tipo_desconto'] === 'percentual') {
-                    $subtotal -= $subtotal * ($item['desconto'] / 100);
+                    $precoUnitario -= $precoUnitario * ($item['desconto'] / 100);
                 } else {
-                    $subtotal -= $item['desconto'];
+                    $precoUnitario -= $item['desconto'];
                 }
             }
-    
-            $this->carrinho[$index]['subtotal'] = max($subtotal, 0);
-            $total += $this->carrinho[$index]['subtotal'];
+
+            $precoUnitario = max($precoUnitario, 0);
+
+            // Atualiza o subtotal (unitário) e o preco_total (quantidade × unitário)
+            $this->carrinho[$index]['subtotal'] = round($precoUnitario, 2);
+            $this->carrinho[$index]['preco_total'] = round($precoUnitario * $item['quantidade'], 2);
+
+            $total += $this->carrinho[$index]['preco_total'];
         }
-    
+
         // 2️⃣ Calcula e aplica desconto geral
-        $this->descontoCalculado = 0; // inicializa para evitar lixo de memória
-        
+        $this->descontoCalculado = 0;
+
         if ($this->descontoGeral > 0 && $total > 0) {
             if ($this->tipoDescontoGeral === 'percentual') {
-                // Calcula o desconto real com base no total bruto
                 $this->descontoCalculado = round($total * ($this->descontoGeral / 100), 2);
-                
-                // Aplica proporcionalmente o desconto percentual
-                foreach ($this->carrinho as $index => $item) {
-                    $novoSubtotal = $item['subtotal'] - ($item['subtotal'] * ($this->descontoGeral / 100));
-                    $this->carrinho[$index]['subtotal'] = round(max($novoSubtotal, 0), 2);
-                }
-    
                 $total -= $this->descontoCalculado;
-    
             } else {
-                // 🔹 Valor fixo
                 $this->descontoCalculado = round(min($this->descontoGeral, $total), 2);
-    
-                $descontoTotalAplicado = 0;
-                $ultimoIndex = array_key_last($this->carrinho);
-    
-                foreach ($this->carrinho as $index => $item) {
-                    $proporcao = $item['subtotal'] / $total;
-                    $descontoProporcional = $this->descontoCalculado * $proporcao;
-    
-                    if ($index === $ultimoIndex) {
-                        $descontoProporcional = $this->descontoCalculado - $descontoTotalAplicado;
-                    }
-    
-                    $descontoProporcional = round($descontoProporcional, 2);
-                    $descontoTotalAplicado += $descontoProporcional;
-    
-                    $novoSubtotal = $item['subtotal'] - $descontoProporcional;
-                    $this->carrinho[$index]['subtotal'] = round(max($novoSubtotal, 0), 2);
-                }
-    
                 $total -= $this->descontoCalculado;
             }
         }
-    
-        // 3️⃣ Total final
+
+        // 3️⃣ Total final da venda
         $this->totalCarrinho = round(max($total, 0), 2);
     }
     
