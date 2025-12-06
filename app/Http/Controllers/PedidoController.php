@@ -6,6 +6,7 @@ use App\Models\Pedido;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class PedidoController extends Controller
 {
@@ -69,7 +70,7 @@ class PedidoController extends Controller
 
     public function allPedidos()
     {
-        return Pedido::all();
+        return Pedido::whereDate('created_at', Carbon::today())->get();
     }
 
     private function mergeItens($itensExistentes, $itensNovos)
@@ -142,6 +143,7 @@ class PedidoController extends Controller
             'cliente_nome' => $validated['cliente_nome'],
             'itens'        => $itensMesclados,
             'valor_total'  => $novoTotal,
+            'status'       => 'pendente'
         ]);
 
         return response()->json([
