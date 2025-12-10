@@ -82,28 +82,43 @@ class VendaItemController extends Controller
                     $q->where('tipo', $request->tipo);
                 });
             })
-            ->with('produto')
+            ->with(['produto.fornecedor'])
             ->get();
 
-        $agrupado = $vendaItens->groupBy('produto_uuid')->map(function ($items) {
+        // AGRUPAR POR FORNECEDOR
+        $agrupadoPorFornecedor = $vendaItens
+        ->groupBy(function ($item) {
+            $fornecedor = $item->produto->fornecedor->razao_social ?? null;
+
+            // Se estiver vazio, null ou string vazia → agrupa em "Sem fornecedor"
+            if (!$fornecedor || trim($fornecedor) === '') {
+                return 'Sem fornecedor';
+            }
+
+            return $fornecedor;
+        })
+        ->map(function ($itemsFornecedor) {
+            // Agrupa produtos dentro do fornecedor
+            $produtos = $itemsFornecedor->groupBy('produto_uuid')->map(function ($itemsProduto) {
+                return [
+                    'produto' => $itemsProduto->first()->produto->nome_titulo ?? 'Produto removido',
+                    'quantidade_total' => $itemsProduto->sum('quantidade'),
+                    'subtotal_total' => $itemsProduto->sum(fn ($i) => (float) $i->subtotal),
+                    'tipo' => $itemsProduto->first()->produto->tipo ?? null,
+                ];
+            });
+
             return [
-                'produto' => $items->first()->produto->nome_titulo ?? 'Produto removido',
-                'quantidade_total' => $items->sum('quantidade'),
-                // soma dos subtotais dos registros desse produto
-                'subtotal_total' => $items->sum(function ($i) {
-                    return (float) $i->subtotal;
-                }),
-                'tipo' => $items->first()->produto->tipo ?? null,
+                'produtos' => $produtos,
+                'quantidade_total_fornecedor' => $itemsFornecedor->sum('quantidade')
             ];
         });
 
-        // total geral (soma exata de todos os subtotais registro a registro)
-        $totalGeral = $vendaItens->sum(function ($i) {
-            return (float) $i->subtotal;
-        });
+        // Total Geral
+        $totalGeral = $vendaItens->sum(fn ($i) => (float) $i->subtotal);
 
         $pdf = Pdf::loadView('app.venda.venda-item.pdf', [
-            'agrupado' => $agrupado,
+            'agrupadoPorFornecedor' => $agrupadoPorFornecedor,
             'data_inicio' => $request->data_inicio,
             'data_fim' => $request->data_fim,
             'tipo' => $request->tipo,
