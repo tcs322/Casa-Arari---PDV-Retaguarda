@@ -21,8 +21,7 @@ class CaixaController extends Controller
         $usuario = Auth::user();
 
         // 🔹 1. Verifica se já existe um caixa aberto para este usuário
-        $caixaAberto = Caixa::where('usuario_uuid', $usuario->uuid)
-            ->whereNull('data_fechamento')
+        $caixaAberto = Caixa::whereNull('data_fechamento')
             ->first();
 
         if ($caixaAberto) {
@@ -40,6 +39,7 @@ class CaixaController extends Controller
             'usuario_uuid' => $usuario->uuid,
             'data_abertura' => Carbon::now(),
             'saldo_inicial' => $saldoInicial,
+            'saldo_final' => 0.00,
             'observacoes' => $observacoes,
         ]);
 

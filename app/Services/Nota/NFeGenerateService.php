@@ -280,7 +280,7 @@ class NFeGenerateService
                     <cUF>15</cUF>
                     <cNF>{$cNF}</cNF>
                     <natOp>Venda de mercadoria</natOp>
-                    <mod>65</mod>
+                    <mod>55</mod>
                     <serie>{$venda->serie_nfe}</serie>
                     <nNF>{$venda->numero_nota_fiscal}</nNF>
                     <dhEmi>{$this->getDataHoraEmissao()}</dhEmi>
@@ -363,7 +363,7 @@ class NFeGenerateService
                     <cUF>15</cUF>
                     <cNF>{$cNF}</cNF>
                     <natOp>Venda de mercadoria</natOp>
-                    <mod>65</mod>
+                    <mod>55</mod>
                     <serie>{$venda->serie_nfe}</serie>
                     <nNF>{$venda->numero_nota_fiscal}</nNF>
                     <dhEmi>{$this->getDataHoraEmissao()}</dhEmi>
