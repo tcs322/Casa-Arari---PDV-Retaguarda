@@ -6,3 +6,4 @@ Route::put('/usuario/{user}', [\App\Http\Controllers\App\Usuario\UsuarioUpdateCo
 Route::get('/usuario', [\App\Http\Controllers\App\Usuario\UsuarioIndexController::class, 'index'])->name('usuario.index');
 Route::get('/usuario/edit/{user}', [\App\Http\Controllers\App\Usuario\UsuarioEditController::class, 'edit'])->name('usuario.edit');
 Route::post('/usuario', [\App\Http\Controllers\App\Usuario\UsuarioStoreController::class, 'store'])->name('usuario.store');
+Route::post('/usuario/{uuid}/reset', [\App\Http\Controllers\App\Usuario\UsuarioResetController::class, 'reset'])->name('usuario.reset');

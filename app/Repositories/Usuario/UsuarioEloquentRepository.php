@@ -2,8 +2,11 @@
 
 namespace App\Repositories\Usuario;
 
+use App\DTO\Usuario\UsuarioResetDTO;
 use App\DTO\Usuario\UsuarioStoreDTO;
 use App\DTO\Usuario\UsuarioUpdateDTO;
+use App\Enums\MustChangePasswordEnum;
+use App\Helpers\PasswordHelper;
 use App\Models\User;
 use App\Repositories\Interfaces\PaginationInterface;
 use App\Repositories\Presenters\PaginationPresenter;
@@ -55,5 +58,19 @@ class UsuarioEloquentRepository implements UsuarioRepositoryInterface
         $this->model->where("uuid", $usuarioUpdateDTO->uuid)->update((array)$usuarioUpdateDTO);
 
         return $this->find($usuarioUpdateDTO->uuid);
+    }
+
+    public function reset(UsuarioResetDTO $usuarioResetDTO): User
+    {
+        $user = $this->find($usuarioResetDTO->uuid);
+
+        $user->update(
+            [
+                "password" => PasswordHelper::generateTemporaryPassword($randomPassword = false),
+                "must_change_password" => MustChangePasswordEnum::YES()->value,
+            ]
+        );
+
+        return $this->find($usuarioResetDTO->uuid);
     }
 }
