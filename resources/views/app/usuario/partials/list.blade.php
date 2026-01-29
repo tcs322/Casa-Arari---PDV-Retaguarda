@@ -27,6 +27,10 @@
                     action="editar"
                     color="primary"
                     :route="route('usuario.edit', $users->uuid)"/>
+                <x-layouts.buttons.resetar-senha-button
+                    :route="route('usuario.reset', $users->uuid)"
+                    identificador="resetar-senha-{{ $users->uuid }}"
+                />
             </td>
         </tr>
     @endforeach

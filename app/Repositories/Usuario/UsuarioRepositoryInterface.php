@@ -2,6 +2,7 @@
 
 namespace App\Repositories\Usuario;
 
+use App\DTO\Usuario\UsuarioResetDTO;
 use App\DTO\Usuario\UsuarioStoreDTO;
 use App\DTO\Usuario\UsuarioUpdateDTO;
 use App\Models\User;
@@ -15,4 +16,5 @@ interface UsuarioRepositoryInterface
     public function find(string $uuid): User;
     public function new(UsuarioStoreDTO $usuarioStoreDTO): User;
     public function update(UsuarioUpdateDTO $usuarioUpdateDTO): User;
+    public function reset(UsuarioResetDTO $usuarioResetDTO): User;
 }
