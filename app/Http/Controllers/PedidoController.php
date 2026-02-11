@@ -61,10 +61,19 @@ class PedidoController extends Controller
      */
     public function marcarComoPreparado(Pedido $pedido)
     {
-        $pedido->update(['status' => 'preparado']);
+        $pedido->status = 'preparado';
+
+        $itens = $pedido->itens;
+
+        foreach ($itens as &$item) {
+            $item['quantidade_pendente'] = 0;
+        }
+
+        $pedido->itens = $itens;
+        $pedido->save();
 
         return response()->json([
-            'message' => 'Pedido marcado como preparado!',
+            'message' => 'Pedido preparado e pendências zeradas!',
         ]);
     }
 
@@ -84,18 +93,24 @@ class PedidoController extends Controller
 
         // Mescla com itens novos
         foreach ($itensNovos as $novo) {
+
             if (isset($resultado[$novo['id']])) {
-                // Já existe → soma a quantidade
+
+                // Já existe → soma a quantidade total
                 $resultado[$novo['id']]['quantidade'] += $novo['quantidade'];
+
+                // ✅ Soma também a quantidade pendente
+                $resultado[$novo['id']]['quantidade_pendente'] += $novo['quantidade_pendente'];
+
             } else {
-                // Não existe → adiciona
+
+                // Não existe → adiciona normalmente
                 $resultado[$novo['id']] = $novo;
             }
         }
 
         return array_values($resultado);
     }
-
 
     public function storeOrUpdate(Request $request)
     {
