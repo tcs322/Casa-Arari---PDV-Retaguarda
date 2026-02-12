@@ -77,6 +77,16 @@ class PedidoController extends Controller
         ]);
     }
 
+    public function marcarComoPago(Pedido $pedido)
+    {
+        $pedido->status_pagamento = 'Pago';
+        $pedido->save();
+
+        return response()->json([
+            'message' => 'Pedido marcado como pago',
+        ]);
+    }
+
     public function allPedidos()
     {
         return Pedido::whereDate('created_at', Carbon::today())->get();
@@ -131,10 +141,11 @@ class PedidoController extends Controller
         // Se o ID não existir, cria novo pedido
         if (empty($validated['id'])) {
             $pedido = Pedido::create([
-                'cliente_nome' => $validated['cliente_nome'],
-                'itens'        => $validated['itens'],
-                'valor_total'  => $valorTotal,
-                'status'       => 'pendente'
+                'cliente_nome'      => $validated['cliente_nome'],
+                'itens'             => $validated['itens'],
+                'valor_total'       => $valorTotal,
+                'status'            => 'pendente',
+                'status_pagamento'  => 'Não pago',
             ]);
 
             return response()->json([
@@ -155,10 +166,11 @@ class PedidoController extends Controller
         }, 0);
 
         $pedido->update([
-            'cliente_nome' => $validated['cliente_nome'],
-            'itens'        => $itensMesclados,
-            'valor_total'  => $novoTotal,
-            'status'       => 'pendente'
+            'cliente_nome'      => $validated['cliente_nome'],
+            'itens'             => $itensMesclados,
+            'valor_total'       => $novoTotal,
+            'status'            => 'pendente',
+            'status_pagamento'  => 'Não pago',
         ]);
 
         return response()->json([
