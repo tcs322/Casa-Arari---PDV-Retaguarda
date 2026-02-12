@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Http;
 
 class PedidoController extends Controller
 {
@@ -222,4 +223,97 @@ class PedidoController extends Controller
             'pedido'  => $pedido,
         ]);
     }
+
+    public function imprimirTotalPedido(Pedido $pedido)
+    {
+        // --- Gera texto do cupom ---
+        $texto = $this->gerarTextoCupomPedido($pedido);
+
+        // --- Encoding para impressora ---
+        $texto = iconv('UTF-8', 'ASCII//TRANSLIT', $texto);
+
+        Log::info("🧾 Impressão parcial Pedido #{$pedido->id}\n" . $texto);
+
+        try {
+
+            $printerServerUrl = "http://host.docker.internal:8051";
+
+            $payload = [
+                'texto'      => $texto,
+                'impressora' => '71840',
+            ];
+
+            $response = Http::post($printerServerUrl, $payload);
+
+            if ($response->successful()) {
+                return response()->json([
+                    'message' => 'Cupom parcial impresso com sucesso!',
+                ]);
+            }
+
+            return response()->json([
+                'message' => 'Erro ao imprimir cupom parcial.',
+                'error'   => $response->body(),
+            ], 500);
+
+        } catch (\Exception $e) {
+
+            return response()->json([
+                'message' => 'Falha ao conectar ao servidor de impressão.',
+                'error'   => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    
+    private function gerarTextoCupomPedido(Pedido $pedido): string
+    {
+        $empresa = config('nfe');
+
+        $texto = "";
+        $texto .= "     {$empresa['nome_fantasia']}     \n";
+        $texto .= "{$empresa['razao_social']}\n";
+        $texto .= "CNPJ: {$empresa['cnpj']}\n";
+        $texto .= "{$empresa['municipio']} - {$empresa['uf']}\n";
+        $texto .= "--------------------------------\n";
+        $texto .= "        NOTA PARCIAL PEDIDO     \n";
+        $texto .= "================================\n";
+
+        $texto .= "Pedido Nº: {$pedido->id}\n";
+        $texto .= "Cliente: {$pedido->cliente_nome}\n";
+        $texto .= "Status: " . strtoupper($pedido->status) . "\n";
+        $texto .= "Pagamento: {$pedido->status_pagamento}\n";
+        $texto .= "Data: " . $pedido->created_at->format('d/m/Y H:i') . "\n";
+        $texto .= "--------------------------------\n";
+
+        $texto .= "ITENS:\n";
+        $texto .= "--------------------------------\n";
+
+        foreach ($pedido->itens as $item) {
+
+            $nome  = $item['nome'];
+            $qtd   = $item['quantidade'];
+            $preco = $item['preco'];
+
+            $totalItem = $qtd * $preco;
+
+            $texto .= "{$nome}\n";
+            $texto .= sprintf(
+                "  %2dx R$ %6s = R$ %6s\n",
+                $qtd,
+                number_format($preco, 2, ',', ''),
+                number_format($totalItem, 2, ',', '')
+            );
+        }
+
+        $texto .= "--------------------------------\n";
+        $texto .= "SUBTOTAL..............: R$ " . number_format($pedido->valor_total, 2, ',', '') . "\n";
+        $texto .= "================================\n";
+
+        $texto .= " * Documento para conferência * \n";
+        $texto .= "================================\n\n\n";
+
+        return $texto;
+    }
+
 }

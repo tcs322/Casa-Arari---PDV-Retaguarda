@@ -60,6 +60,7 @@ Route::post('/pedidos/{pedido}/pago', [PedidoController::class, 'marcarComoPago'
 Route::get('/pedidos/todos', [PedidoController::class, 'allPedidos']);
 Route::get('/pedidos/{id}', [PedidoController::class, 'find']);
 Route::put('/pedidos/{id}', [PedidoController::class, 'update']);
+Route::post('/pedidos/{pedido}/parcial', [PedidoController::class, 'imprimirTotalPedido']);
 
 
 
