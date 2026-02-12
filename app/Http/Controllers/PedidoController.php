@@ -61,10 +61,29 @@ class PedidoController extends Controller
      */
     public function marcarComoPreparado(Pedido $pedido)
     {
-        $pedido->update(['status' => 'preparado']);
+        $pedido->status = 'preparado';
+
+        $itens = $pedido->itens;
+
+        foreach ($itens as &$item) {
+            $item['quantidade_pendente'] = 0;
+        }
+
+        $pedido->itens = $itens;
+        $pedido->save();
 
         return response()->json([
-            'message' => 'Pedido marcado como preparado!',
+            'message' => 'Pedido preparado e pendências zeradas!',
+        ]);
+    }
+
+    public function marcarComoPago(Pedido $pedido)
+    {
+        $pedido->status_pagamento = 'Pago';
+        $pedido->save();
+
+        return response()->json([
+            'message' => 'Pedido marcado como pago',
         ]);
     }
 
@@ -84,18 +103,24 @@ class PedidoController extends Controller
 
         // Mescla com itens novos
         foreach ($itensNovos as $novo) {
+
             if (isset($resultado[$novo['id']])) {
-                // Já existe → soma a quantidade
+
+                // Já existe → soma a quantidade total
                 $resultado[$novo['id']]['quantidade'] += $novo['quantidade'];
+
+                // ✅ Soma também a quantidade pendente
+                $resultado[$novo['id']]['quantidade_pendente'] += $novo['quantidade_pendente'];
+
             } else {
-                // Não existe → adiciona
+
+                // Não existe → adiciona normalmente
                 $resultado[$novo['id']] = $novo;
             }
         }
 
         return array_values($resultado);
     }
-
 
     public function storeOrUpdate(Request $request)
     {
@@ -116,10 +141,11 @@ class PedidoController extends Controller
         // Se o ID não existir, cria novo pedido
         if (empty($validated['id'])) {
             $pedido = Pedido::create([
-                'cliente_nome' => $validated['cliente_nome'],
-                'itens'        => $validated['itens'],
-                'valor_total'  => $valorTotal,
-                'status'       => 'pendente'
+                'cliente_nome'      => $validated['cliente_nome'],
+                'itens'             => $validated['itens'],
+                'valor_total'       => $valorTotal,
+                'status'            => 'pendente',
+                'status_pagamento'  => 'Não pago',
             ]);
 
             return response()->json([
@@ -140,10 +166,11 @@ class PedidoController extends Controller
         }, 0);
 
         $pedido->update([
-            'cliente_nome' => $validated['cliente_nome'],
-            'itens'        => $itensMesclados,
-            'valor_total'  => $novoTotal,
-            'status'       => 'pendente'
+            'cliente_nome'      => $validated['cliente_nome'],
+            'itens'             => $itensMesclados,
+            'valor_total'       => $novoTotal,
+            'status'            => 'pendente',
+            'status_pagamento'  => 'Não pago',
         ]);
 
         return response()->json([
