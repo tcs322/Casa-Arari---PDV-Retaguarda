@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/vendas', [\App\Http\Controllers\App\Venda\VendaController::class, 'index'])->name('venda.index');
 Route::get('/vendas/{uuid}/show', [\App\Http\Controllers\App\Venda\VendaController::class, 'show'])->name('venda.show');
 Route::post('/venda/{uuid}/cancelar', [\App\Http\Controllers\App\Venda\VendaController::class, 'cancelarVenda'])->name('venda.cancelar');
+Route::post('/venda/{uuid}/reimprimir', [\App\Http\Controllers\App\Venda\VendaController::class, 'reimprimirNotaVenda'])->name('venda.reimprimir');
 
 Route::middleware(['caixa_aberto'])->group(function () {
     Route::get('frente-caixa', [\App\Http\Controllers\App\Venda\VendaController::class, 'create'])->name('frente-caixa');
@@ -16,7 +17,6 @@ Route::middleware(['caixa_aberto'])->group(function () {
 Route::get('/vendas/search', [\App\Http\Controllers\App\Venda\VendaController::class, 'search'])->name('vendas.search');
 Route::get('/vendas/period', [\App\Http\Controllers\App\Venda\VendaController::class, 'getByPeriod'])->name('vendas.by_period');
 Route::get('/vendas/period/pdf', [\App\Http\Controllers\App\Venda\VendaController::class, 'exportPdf'])->name('vendas.by_period_pdf');
-
 
 // venda itens
 
