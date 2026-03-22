@@ -54,6 +54,22 @@ class VendaController extends Controller
         return view('app.venda.show', ["venda" => $venda]);
     }
 
+    public function reimprimirNotaVenda(string $uuid, VendaShowRequest $request)
+    {
+        $request->merge([
+            "uuid" => $uuid
+        ]);
+
+        $venda = $this->action->show(VendaShowDTO::makeFromRequest($request));
+        
+        $dadosVenda = $this->action->getDadosImpressao($venda);
+
+        $textoCupom = $this->action->gerarTextoReimpressaoCupom($dadosVenda);
+
+        return $this->action->reimprimirNota($venda->id, $textoCupom);
+    }
+
+
     public function cancelarVenda(string $vendaUuid)
     {
         

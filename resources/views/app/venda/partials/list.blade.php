@@ -26,6 +26,10 @@
                     :route="route('venda.cancelar', $venda->uuid)"
                     identificador="cancelar-venda-{{ $venda->uuid }}"
                 />
+                <x-layouts.buttons.reimprimir-nota-fiscal-button
+                    :route="route('venda.reimprimir', $venda->uuid)"
+                    identificador="reimprimir-vebda-{{ $venda->uuid }}"
+                />
             </td>
         </tr>
     @endforeach
