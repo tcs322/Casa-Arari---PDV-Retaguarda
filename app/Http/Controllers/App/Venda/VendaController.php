@@ -66,7 +66,9 @@ class VendaController extends Controller
 
         $textoCupom = $this->action->gerarTextoReimpressaoCupom($dadosVenda);
 
-        return $this->action->reimprimirNota($venda->id, $textoCupom);
+        $this->action->reimprimirNota($venda->id, $textoCupom);
+
+        return redirect()->route('venda.index')->with('message', 'Nota cancelada e cupom impresso com sucesso!');
     }
 
 

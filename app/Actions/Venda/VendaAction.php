@@ -174,9 +174,50 @@ class VendaAction
 
     public function getDadosImpressao(Venda $venda)
     {
+        // return [
+        //     'success' => true,
+        //     'print_data' => [
+        //         'empresa' => [
+        //             'nome' => config('nfe.razao_social', 'Casa Arari LTDA'),
+        //             'endereco' => config('nfe.logradouro', 'Rua Exemplo, nfe.numero'),
+        //             'cidade' => config('nfe.municipio', 'Belém/PA'),
+        //             'cnpj' => config('nfe.cnpj', '00.000.000/0001-00'),
+        //             'telefone' => config('nfe.telefone', '(91) 9999-9999')
+        //         ],
+        //         'venda' => [
+        //             'numero' => $venda->id,
+        //             'uuid' => $venda->uuid,
+        //             'data' => $venda->created_at->format('d/m/Y H:i:s'),
+        //             'cliente' => $venda->cliente ? $venda->cliente->nome : 'CONSUMIDOR FINAL',
+        //             'cpf_cnpj' => $venda->cliente ? $venda->cliente->cpf : '',
+        //         ],
+        //         'itens' => $venda->itens->map(function($item) {
+        //             return [
+        //                 'descricao' => $item->produto->nome_titulo,
+        //                 'quantidade' => $item->quantidade,
+        //                 'valor_unitario' => $item->preco_unitario,
+        //                 'valor_total' => $item->preco_total
+        //             ];
+        //         }),
+        //         'totais' => [
+        //             'subtotal' => $venda->valor_total, // Ou calcule o subtreal se tiver desconto
+        //             'desconto' => 0, // Ajuste conforme sua lógica
+        //             'total' => $venda->valor_total
+        //         ],
+        //         'pagamentos' => [[
+        //             'forma' => $venda->forma_pagamento,
+        //             'valor' => $venda->valor_total
+        //         ]],
+        //         'contingencia' => request('contingencia', false),
+        //         'nfe' => [
+        //             'numero' => $venda->numero_nota_fiscal,
+        //             'serie' => $venda->serie_nfe,
+        //             'chave' => $venda->chave_acesso // Se tiver este campo
+        //         ]
+        //     ]
+        // ];
+
         return [
-            'success' => true,
-            'print_data' => [
                 'empresa' => [
                     'nome' => config('nfe.razao_social', 'Casa Arari LTDA'),
                     'endereco' => config('nfe.logradouro', 'Rua Exemplo, nfe.numero'),
@@ -214,7 +255,6 @@ class VendaAction
                     'serie' => $venda->serie_nfe,
                     'chave' => $venda->chave_acesso // Se tiver este campo
                 ]
-            ]
         ];
     }
 }
