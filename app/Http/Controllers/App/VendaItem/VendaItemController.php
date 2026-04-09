@@ -103,7 +103,9 @@ class VendaItemController extends Controller
                 return [
                     'produto' => $itemsProduto->first()->produto->nome_titulo ?? 'Produto removido',
                     'quantidade_total' => $itemsProduto->sum('quantidade'),
-                    'subtotal_total' => $itemsProduto->sum(fn ($i) => (float) $i->subtotal),
+                    'subtotal_total' => $itemsProduto->sum(function ($i) {
+                        return $i->quantidade * $i->subtotal;
+                    }),
                     'tipo' => $itemsProduto->first()->produto->tipo ?? null,
                 ];
             });
@@ -115,7 +117,9 @@ class VendaItemController extends Controller
         });
 
         // Total Geral
-        $totalGeral = $vendaItens->sum(fn ($i) => (float) $i->subtotal);
+        $totalGeral = $vendaItens->sum(function ($i) {
+            return $i->quantidade * $i->subtotal;
+        });
 
         $pdf = Pdf::loadView('app.venda.venda-item.pdf', [
             'agrupadoPorFornecedor' => $agrupadoPorFornecedor,

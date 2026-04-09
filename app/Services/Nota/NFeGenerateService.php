@@ -192,7 +192,7 @@ class NFeGenerateService
             'cUF' => '15',
             'AAMM' => date('ym'),
             'CNPJ' => config('nfe.cnpj'),
-            'MOD' => '55',
+            'MOD' => '65',
             'SERIE' => str_pad($venda->serie_nfe ?? '1', 3, '0', STR_PAD_LEFT),
             'nNF' => str_pad($venda->numero_nota_fiscal ?? '1', 9, '0', STR_PAD_LEFT),
             'TPEMIS' => '1',
@@ -280,7 +280,7 @@ class NFeGenerateService
                     <cUF>15</cUF>
                     <cNF>{$cNF}</cNF>
                     <natOp>Venda de mercadoria</natOp>
-                    <mod>55</mod>
+                    <mod>65</mod>
                     <serie>{$venda->serie_nfe}</serie>
                     <nNF>{$venda->numero_nota_fiscal}</nNF>
                     <dhEmi>{$this->getDataHoraEmissao()}</dhEmi>
@@ -363,7 +363,7 @@ class NFeGenerateService
                     <cUF>15</cUF>
                     <cNF>{$cNF}</cNF>
                     <natOp>Venda de mercadoria</natOp>
-                    <mod>55</mod>
+                    <mod>65</mod>
                     <serie>{$venda->serie_nfe}</serie>
                     <nNF>{$venda->numero_nota_fiscal}</nNF>
                     <dhEmi>{$this->getDataHoraEmissao()}</dhEmi>
