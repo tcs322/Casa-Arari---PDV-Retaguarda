@@ -23,6 +23,7 @@
                     <option value="">Todos</option>
                     <option value="CAFETERIA">Cafeteria</option>
                     <option value="LIVRARIA">Livraria</option>
+                    <option value="PAPELARIA">Papelaria</option>
                 </select>
             </div>
 

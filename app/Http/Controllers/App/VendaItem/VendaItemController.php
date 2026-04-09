@@ -19,7 +19,7 @@ class VendaItemController extends Controller
         $request->validate([
             'data_inicio' => 'required|date',
             'data_fim' => 'required|date|after_or_equal:data_inicio',
-            'tipo' => 'nullable|string|in:LIVRARIA,CAFETERIA'
+            'tipo' => 'nullable|string|in:LIVRARIA,CAFETERIA,PAPELARIA'
         ]);
 
         $dataInicio = $request->data_inicio . ' 00:00:00';
@@ -68,7 +68,7 @@ class VendaItemController extends Controller
         $request->validate([
             'data_inicio' => 'required|date',
             'data_fim' => 'required|date|after_or_equal:data_inicio',
-            'tipo' => 'nullable|string|in:LIVRARIA,CAFETERIA'
+            'tipo' => 'nullable|string|in:LIVRARIA,CAFETERIA,PAPELARIA'
         ]);
 
         $dataInicio = $request->data_inicio . ' 00:00:00';
