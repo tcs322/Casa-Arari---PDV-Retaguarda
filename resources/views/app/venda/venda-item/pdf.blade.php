@@ -37,6 +37,7 @@
                     <th>Produto</th>
                     <th>Quantidade Vendida</th>
                     <th>Tipo</th>
+                    <th class="text-right">Preço Unitário (R$)</th>
                     <th class="text-right">Subtotal (R$)</th>
                 </tr>
             </thead>
@@ -47,6 +48,9 @@
                         <td>{{ $produto['quantidade_total'] }}</td>
                         <td>{{ $produto['tipo'] }}</td>
                         <td class="text-right">
+                            {{ number_format($produto['preco_unitario'], 2, ',', '.') }}
+                        </td>
+                        <td class="text-right">
                             {{ number_format($produto['subtotal_total'], 2, ',', '.') }}
                         </td>
                     </tr>
@@ -56,8 +60,14 @@
             <!-- Quantidade total do fornecedor -->
             <tfoot>
                 <tr class="sub-footer">
-                    <td colspan="3" class="text-right">Quantidade total do fornecedor</td>
+                    <td colspan="4" class="text-right">Quantidade total do fornecedor</td>
                     <td class="text-right">{{ $dados['quantidade_total_fornecedor'] }}</td>
+                </tr>
+                <tr class="sub-footer">
+                    <td colspan="4" class="text-right">Total do fornecedor (R$)</td>
+                    <td class="text-right">
+                        {{ number_format($dados['total_fornecedor'], 2, ',', '.') }}
+                    </td>
                 </tr>
             </tfoot>
         </table>

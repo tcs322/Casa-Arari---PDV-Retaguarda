@@ -86,39 +86,84 @@ class VendaItemController extends Controller
             ->get();
 
         // AGRUPAR POR FORNECEDOR
+        // $agrupadoPorFornecedor = $vendaItens
+        // ->groupBy(function ($item) {
+        //     $fornecedor = $item->produto->fornecedor->razao_social ?? null;
+
+        //     // Se estiver vazio, null ou string vazia → agrupa em "Sem fornecedor"
+        //     if (!$fornecedor || trim($fornecedor) === '') {
+        //         return 'Sem fornecedor';
+        //     }
+
+        //     return $fornecedor;
+        // })
+        // ->map(function ($itemsFornecedor) {
+        //     // Agrupa produtos dentro do fornecedor
+        //     $produtos = $itemsFornecedor->groupBy('produto_uuid')->map(function ($itemsProduto) {
+        //         return [
+        //             'produto' => $itemsProduto->first()->produto->nome_titulo ?? 'Produto removido',
+        //             'quantidade_total' => $itemsProduto->sum('quantidade'),
+        //             'subtotal_total' => $itemsProduto->sum(function ($i) {
+        //                 return $i->quantidade * $i->subtotal;
+        //             }),
+        //             'tipo' => $itemsProduto->first()->produto->tipo ?? null,
+        //         ];
+        //     });
+
+        //     return [
+        //         'produtos' => $produtos,
+        //         'quantidade_total_fornecedor' => $itemsFornecedor->sum('quantidade')
+        //     ];
+        // });
+
+        // // Total Geral
+        // $totalGeral = $vendaItens->sum(function ($i) {
+        //     return $i->quantidade * $i->subtotal;
+        // });
+
         $agrupadoPorFornecedor = $vendaItens
-        ->groupBy(function ($item) {
-            $fornecedor = $item->produto->fornecedor->razao_social ?? null;
+            ->groupBy(function ($item) {
+                $fornecedor = $item->produto->fornecedor->razao_social ?? null;
 
-            // Se estiver vazio, null ou string vazia → agrupa em "Sem fornecedor"
-            if (!$fornecedor || trim($fornecedor) === '') {
-                return 'Sem fornecedor';
-            }
+                return (!$fornecedor || trim($fornecedor) === '')
+                    ? 'Sem fornecedor'
+                    : $fornecedor;
+            })
+            ->map(function ($itemsFornecedor) {
 
-            return $fornecedor;
-        })
-        ->map(function ($itemsFornecedor) {
-            // Agrupa produtos dentro do fornecedor
-            $produtos = $itemsFornecedor->groupBy('produto_uuid')->map(function ($itemsProduto) {
+                $produtos = $itemsFornecedor
+                    ->groupBy('produto_uuid')
+                    ->map(function ($itemsProduto) {
+
+                        $precoUnitario = $itemsProduto->first()->preco_unitario ?? 0;
+
+                        return [
+                            'produto' => $itemsProduto->first()->produto->nome_titulo ?? 'Produto removido',
+                            'quantidade_total' => $itemsProduto->sum('quantidade'),
+                            'preco_unitario' => $precoUnitario,
+                            'subtotal_total' => $itemsProduto->sum(function ($i) {
+                                return $i->quantidade * $i->preco_unitario;
+                            }),
+                            'tipo' => $itemsProduto->first()->produto->tipo ?? null,
+                        ];
+                    });
+
+                // ✅ total financeiro do fornecedor
+                $totalFornecedor = $itemsFornecedor->sum(function ($i) {
+                    return $i->quantidade * $i->preco_unitario;
+                });
+
                 return [
-                    'produto' => $itemsProduto->first()->produto->nome_titulo ?? 'Produto removido',
-                    'quantidade_total' => $itemsProduto->sum('quantidade'),
-                    'subtotal_total' => $itemsProduto->sum(function ($i) {
-                        return $i->quantidade * $i->subtotal;
-                    }),
-                    'tipo' => $itemsProduto->first()->produto->tipo ?? null,
+                    'produtos' => $produtos,
+                    'quantidade_total_fornecedor' => $itemsFornecedor->sum('quantidade'),
+                    'total_fornecedor' => $totalFornecedor
                 ];
             });
 
-            return [
-                'produtos' => $produtos,
-                'quantidade_total_fornecedor' => $itemsFornecedor->sum('quantidade')
-            ];
-        });
 
-        // Total Geral
+        // ✅ total geral corrigido
         $totalGeral = $vendaItens->sum(function ($i) {
-            return $i->quantidade * $i->subtotal;
+            return $i->quantidade * $i->preco_unitario;
         });
 
         $pdf = Pdf::loadView('app.venda.venda-item.pdf', [
