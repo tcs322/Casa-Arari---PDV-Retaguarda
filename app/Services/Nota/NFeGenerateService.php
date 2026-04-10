@@ -42,6 +42,7 @@ class NFeGenerateService
         );
 
         $this->tools = new Tools(json_encode($this->config), $certificate);
+        $this->tools->model(65);
     }
 
     public function emitirNFe(Venda $venda): array
@@ -698,10 +699,8 @@ class NFeGenerateService
             $certificatePassword
         );
         
-        $tools = new Tools(json_encode($config), $certificate);
-        
         // Assinar o XML
-        return $tools->signNFe($xml);
+        return $this->tools->signNFe($xml);
     }
 
 

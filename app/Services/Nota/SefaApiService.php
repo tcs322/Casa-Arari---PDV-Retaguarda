@@ -17,6 +17,9 @@ class SefaApiService
     {
         $this->config = $this->getConfig();
         $this->tools = new Tools(json_encode($this->config), $this->getCertificate());
+
+        // 🔥 ESSENCIAL
+        $this->tools->model(65);
     }
 
     /**
