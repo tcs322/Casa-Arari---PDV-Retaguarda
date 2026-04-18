@@ -42,19 +42,19 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach ($dados['produtos'] as $produto)
-                    <tr>
-                        <td>{{ $produto['produto'] }}</td>
-                        <td>{{ $produto['quantidade_total'] }}</td>
-                        <td>{{ $produto['tipo'] }}</td>
-                        <td class="text-right">
-                            {{ number_format($produto['preco_unitario'], 2, ',', '.') }}
-                        </td>
-                        <td class="text-right">
-                            {{ number_format($produto['subtotal_total'], 2, ',', '.') }}
-                        </td>
-                    </tr>
-                @endforeach
+            @foreach ($dados['produtos'] as $produto)
+                <tr>
+                    <td>{{ $produto['produto'] }}</td>
+                    <td class="text-right">{{ $produto['quantidade_total'] }}</td>
+                    <td>{{ $produto['tipo'] ?? '-' }}</td>
+                    <td class="text-right">
+                        {{ number_format($produto['preco_unitario'], 2, ',', '.') }}
+                    </td>
+                    <td class="text-right">
+                        {{ number_format($produto['subtotal_total'], 2, ',', '.') }}
+                    </td>
+                </tr>
+            @endforeach
             </tbody>
 
             <!-- Quantidade total do fornecedor -->
