@@ -132,7 +132,9 @@ class VendaItemController extends Controller
             ->map(function ($itemsFornecedor) {
 
                 $produtos = $itemsFornecedor
-                    ->groupBy('produto_uuid')
+                    ->groupBy(function ($item) {
+                        return $item->produto_uuid . '_' . $item->preco_unitario;
+                    })
                     ->map(function ($itemsProduto) {
 
                         $precoUnitario = $itemsProduto->first()->preco_unitario ?? 0;
