@@ -9,6 +9,7 @@ use App\DTO\Cliente\ClienteStoreDTO;
 use App\DTO\Cliente\ClienteUpdateDTO;
 use App\Http\Requests\App\Cliente\ClienteStoreRequest;
 use App\Http\Requests\App\Cliente\ClienteUpdateRequest;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 
 class ClienteController
@@ -78,5 +79,16 @@ class ClienteController
         return view('app.cliente.show', [
             "cliente" => $cliente,
         ]);
+    }
+
+    public function pdfListClientes(Request $request)
+    {
+        $clientes = $this->action->getAll();
+
+        $pdf = Pdf::loadView('app.cliente.clientes-list', [
+            'clientes' => $clientes
+        ]);
+
+        return $pdf->download('lista-clientes.pdf');
     }
 }

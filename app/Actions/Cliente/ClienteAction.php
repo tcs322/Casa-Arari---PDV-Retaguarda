@@ -40,4 +40,9 @@ class ClienteAction
     {
         return $this->repository->find($dto->uuid);
     }
+
+    public function getAll()
+    {
+        return $this->repository->all();
+    }
 }
