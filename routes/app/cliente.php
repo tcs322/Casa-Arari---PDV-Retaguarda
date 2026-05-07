@@ -6,3 +6,4 @@ Route::post('cliente', [App\Http\Controllers\App\Cliente\ClienteController::clas
 Route::get('cliente/{uuid}/edit', [App\Http\Controllers\App\Cliente\ClienteController::class, 'edit'])->name('cliente.edit');
 Route::put('cliente/update', [App\Http\Controllers\App\Cliente\ClienteController::class, 'update'])->name('cliente.update');
 Route::get('cliente/{uuid}/show', [App\Http\Controllers\App\Cliente\ClienteController::class, 'show'])->name('cliente.show');
+Route::get('clientes-list', [App\Http\Controllers\App\Cliente\ClienteController::class, 'pdfListClientes'])->name('clientes-list.search');
