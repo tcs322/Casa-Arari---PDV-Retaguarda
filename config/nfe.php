@@ -40,8 +40,8 @@ return [
     | Certificado Digital e Segurança
     |--------------------------------------------------------------------------
     */
-    'csc' => env('NFE_CSC', ''),
-    'csc_id' => env('NFE_CSC_ID', ''),
+    'csc' => env('NFE_CSC', '2BE1580D5B0B40ACB4D21CEFC5FA2CF6'),
+    'csc_id' => env('NFE_CSC_ID', '000001'),
     'certificado_path' => env('NFE_CERTIFICADO_PATH', ''),
     'certificado_senha' => env('NFE_CERTIFICADO_SENHA', ''),
     
