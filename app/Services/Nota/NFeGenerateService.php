@@ -259,6 +259,22 @@ class NFeGenerateService
         $total = $this->getTotal($venda);
         $pagamento = $this->gerarPagamento($venda);
 
+        $infCpl = '';
+
+        if ((int) config('nfe.ambiente') === 2) {
+            $infCpl = 'NF-E EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL';
+        }
+
+        $infAdicXml = '';
+
+        if (!empty($infCpl)) {
+            $infAdicXml = <<<XML
+            <infAdic>
+                <infCpl>{$infCpl}</infCpl>
+            </infAdic>
+            XML;
+        }
+
         // 🔹 Monta os <detPag> dinamicamente a partir do array retornado por gerarPagamento()
         $detPagXml = '';
         foreach ($pagamento['detPag'] as $det) {
@@ -348,9 +364,7 @@ class NFeGenerateService
                 <pag>
                 {$detPagXml}
                 </pag>
-                <infAdic>
-                    <infCpl>NF-e emitida em ambiente de homologacao - sem valor fiscal</infCpl>
-                </infAdic>
+                {$infAdicXml}
             </infNFe>
             </NFe>
             XML;
@@ -447,9 +461,7 @@ class NFeGenerateService
                 <pag>
                 {$detPagXml}
                 </pag>
-                <infAdic>
-                    <infCpl>NF-e emitida em ambiente de homologacao - sem valor fiscal</infCpl>
-                </infAdic>
+                {$infAdicXml}
             </infNFe>
             </NFe>
             XML;
