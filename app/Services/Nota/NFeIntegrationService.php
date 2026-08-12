@@ -102,7 +102,7 @@ class NFeIntegrationService
             'tpNF' => '1', // 1-Saída
             'idDest' => '1', // 1-Operação interna
             'cMunFG' => '1501402', // Belém/PA
-            'tpImp' => '1', // DANFE Retrato
+            'tpImp' => '4', // DANFE Retrato
             'tpEmis' => '1', // Normal
             'cDV' => '1',
             'tpAmb' => $this->config['ambiente'],

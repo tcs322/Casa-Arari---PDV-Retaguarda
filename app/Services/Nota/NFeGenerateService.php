@@ -304,7 +304,7 @@ class NFeGenerateService
                     <tpNF>1</tpNF>
                     <idDest>1</idDest>
                     <cMunFG>1501402</cMunFG>
-                    <tpImp>1</tpImp>
+                    <tpImp>4</tpImp>
                     <tpEmis>1</tpEmis>
                     <cDV>{$cDV}</cDV>
                     <tpAmb>1</tpAmb>
@@ -385,7 +385,7 @@ class NFeGenerateService
                     <tpNF>1</tpNF>
                     <idDest>1</idDest>
                     <cMunFG>1501402</cMunFG>
-                    <tpImp>1</tpImp>
+                    <tpImp>4</tpImp>
                     <tpEmis>1</tpEmis>
                     <cDV>{$cDV}</cDV>
                     <tpAmb>1</tpAmb>
@@ -568,7 +568,6 @@ class NFeGenerateService
                 <cEAN>7890000000000</cEAN>
                 <xProd>{$item->produto->nome_titulo}</xProd>
                 <NCM>49019900</NCM>
-                <CEST>2800300</CEST>
                 <CFOP>5102</CFOP>
                 <uCom>UN</uCom>
                 <qCom>{$quantidade}</qCom>
@@ -655,10 +654,18 @@ class NFeGenerateService
         // Define se o pagamento é à vista (0) ou a prazo (1)
         $indPag = ($formaPagamento == '03' && $venda->quantidade_parcelas > 1) ? '1' : '0';
 
+        // return [
+        //     'detPag' => [[
+        //         'indPag' => $indPag,
+        //         'tPag'   => $formaPagamento,
+        //         'vPag'   => number_format($venda->valor_total, 2, '.', '')
+        //     ]]
+        // ];
+
         return [
             'detPag' => [[
-                'indPag' => $indPag,
-                'tPag'   => $formaPagamento,
+                'indPag' => 0,
+                'tPag'   => '01',
                 'vPag'   => number_format($venda->valor_total, 2, '.', '')
             ]]
         ];
