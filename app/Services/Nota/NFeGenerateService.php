@@ -3,6 +3,7 @@
 namespace App\Services\Nota;
 
 use App\Enums\FormaPagamentoEnum;
+use App\Enums\NumeroBandeiraCartaoEnum;
 use App\Models\Venda;
 use NFePHP\NFe\Tools;
 use NFePHP\Common\Certificate;
@@ -275,15 +276,27 @@ class NFeGenerateService
             XML;
         }
 
-        // 🔹 Monta os <detPag> dinamicamente a partir do array retornado por gerarPagamento()
+        // Monta os <detPag> dinamicamente a partir do array retornado por gerarPagamento()
         $detPagXml = '';
+
         foreach ($pagamento['detPag'] as $det) {
+            $cardXml = '';
+
+            if (isset($det['card'])) {
+                $cardXml = "
+                        <card>
+                            <tpIntegra>{$det['card']['tpIntegra']}</tpIntegra>
+                            <tBand>{$det['card']['tBand']}</tBand>
+                        </card>";
+            }
+
             $detPagXml .= "
-            <detPag>
-                <indPag>{$det['indPag']}</indPag>
-                <tPag>{$det['tPag']}</tPag>
-                <vPag>{$det['vPag']}</vPag>
-            </detPag>";
+                    <detPag>
+                        <indPag>{$det['indPag']}</indPag>
+                        <tPag>{$det['tPag']}</tPag>
+                        <vPag>{$det['vPag']}</vPag>
+                        {$cardXml}
+                    </detPag>";
         }
 
         if ($destinatario['nome'] == 'CONSUMIDOR FINAL NAO INFORMADO')
@@ -647,27 +660,60 @@ class NFeGenerateService
         ];
     }
 
-    private function gerarPagamento(Venda $venda)
+    // private function gerarPagamento(Venda $venda)
+    // {
+    //     $formaPagamento = $this->mapearFormaPagamentoNFe($venda->forma_pagamento);
+
+    //     // Define se o pagamento é à vista (0) ou a prazo (1)
+    //     $indPag = ($formaPagamento == '03' && $venda->quantidade_parcelas > 1) ? '1' : '0';
+
+    //     // return [
+    //     //     'detPag' => [[
+    //     //         'indPag' => $indPag,
+    //     //         'tPag'   => $formaPagamento,
+    //     //         'vPag'   => number_format($venda->valor_total, 2, '.', '')
+    //     //     ]]
+    //     // ];
+
+    //     return [
+    //         'detPag' => [[
+    //             'indPag' => 0,
+    //             'tPag'   => '01',
+    //             'vPag'   => number_format($venda->valor_total, 2, '.', '')
+    //         ]]
+    //     ];
+    // }
+
+    private function gerarPagamento(Venda $venda): array
     {
         $formaPagamento = $this->mapearFormaPagamentoNFe($venda->forma_pagamento);
 
-        // Define se o pagamento é à vista (0) ou a prazo (1)
-        $indPag = ($formaPagamento == '03' && $venda->quantidade_parcelas > 1) ? '1' : '0';
+        $indPag = ($formaPagamento === '03' && $venda->quantidade_parcelas > 1)
+            ? '1'
+            : '0';
 
-        // return [
-        //     'detPag' => [[
-        //         'indPag' => $indPag,
-        //         'tPag'   => $formaPagamento,
-        //         'vPag'   => number_format($venda->valor_total, 2, '.', '')
-        //     ]]
-        // ];
+        $detPag = [
+            'indPag' => $indPag,
+            'tPag'   => $formaPagamento,
+            'vPag'   => number_format($venda->valor_total, 2, '.', ''),
+        ];
+
+        if (in_array($formaPagamento, ['03', '04'], true)) {
+            $detPag['card'] = $this->gerarDadosCartao($venda);
+        }
 
         return [
-            'detPag' => [[
-                'indPag' => 0,
-                'tPag'   => '01',
-                'vPag'   => number_format($venda->valor_total, 2, '.', '')
-            ]]
+            'detPag' => [$detPag],
+        ];
+    }
+
+    private function gerarDadosCartao(Venda $venda): array
+    {
+        return [
+            'tpIntegra' => '2',
+            'tBand'     => NumeroBandeiraCartaoEnum::fromValue(
+                $venda->bandeira_cartao
+            )->value,
         ];
     }
 
