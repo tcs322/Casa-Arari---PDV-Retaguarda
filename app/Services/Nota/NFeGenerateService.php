@@ -711,7 +711,7 @@ class NFeGenerateService
     {
         return [
             'tpIntegra' => '2',
-            'tBand'     => NumeroBandeiraCartaoEnum::fromValue(
+            'tBand'     => NumeroBandeiraCartaoEnum::fromKey(
                 $venda->bandeira_cartao
             )->value,
         ];
