@@ -64,13 +64,7 @@ class CaixaController extends Controller
         $dataInicio = $caixaAberto->data_abertura;
         $dataFim = now();
 
-        $vendas = Venda::finalizadas()
-            ->doPeriodo($dataInicio, $dataFim)
-            ->get();
-
-        if ($vendas->isEmpty()) {
-            return response("<pre>⚠️ Nenhuma venda encontrada para o período de hoje.</pre>");
-        }
+        $vendas = Venda::doPeriodo($dataInicio, $dataFim)->get();
 
         // --- Totais e agrupamentos ---
         $totalBruto = $vendas->sum('valor_total');
