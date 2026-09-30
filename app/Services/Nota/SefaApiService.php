@@ -7,6 +7,7 @@ use NFePHP\NFe\Tools;
 use NFePHP\Common\Certificate;
 use Exception;
 use Illuminate\Support\Facades\Log;
+use NFePHP\NFe\Complements;
 
 class SefaApiService
 {
@@ -25,41 +26,199 @@ class SefaApiService
     /**
      * Envia NF-e para autorização (Síncrono)
      */
+    // public function autorizarNFe(string $xmlAssinado): array
+    // {
+    //     try {
+    //         $idLote = $this->gerarIdLoteValido();
+    //         Log::info("📦 Transmitindo NF-e. Lote: {$idLote}");
+
+    //         // Envia o lote para a SEFAZ
+    //         $response = $this->tools->sefazEnviaLote([$xmlAssinado], $idLote, 1);
+
+    //         // Se a SEFAZ respondeu com sucesso, processa normalmente
+    //         $resultado = $this->processarRespostaAutorizacao($response, $idLote);
+
+    //         // 🚀 Retorno padrão de sucesso
+    //         return [
+    //             'success' => true,
+    //             'tipo' => 'autorizada',
+    //             'chave_acesso' => $resultado['chave_acesso'] ?? null,
+    //             'numero_protocolo' => $resultado['numero_protocolo'] ?? null,
+    //             'xml' => $resultado['xml'] ?? null,
+    //             'mensagem' => 'NF-e autorizada com sucesso'
+    //         ];
+
+    //     } catch (\Exception $e) {
+    //         $mensagem = $e->getMessage();
+
+    //         // 🧭 Palavras-chave para detectar erro de comunicação / SEFAZ fora do ar
+    //         $indicadoresContingencia = [
+    //             'Could not connect', 'Connection refused', 'SSL',
+    //             'timeout', 'Could not resolve host',
+    //             'SEFAZ INDISPONÍVEL', 'Falha de conexão', 'SOAP'
+    //         ];
+
+    //         foreach ($indicadoresContingencia as $palavra) {
+    //             if (stripos($mensagem, $palavra) !== false) {
+    //                 Log::warning("⚙️ Entrando em contingência automática: {$mensagem}");
+
+    //                 return [
+    //                     'success' => false,
+    //                     'tipo' => 'contingencia',
+    //                     'erro' => 'Falha de comunicação com a SEFAZ',
+    //                     'mensagem' => 'Servidor SEFAZ indisponível - emitido em contingência',
+    //                     'codigo_erro' => 'CONTINGENCIA'
+    //                 ];
+    //             }
+    //         }
+
+    //         // ❌ Caso contrário, é uma rejeição ou erro de retorno SEFAZ
+    //         Log::error("❌ Erro ao autorizar NF-e: {$mensagem}");
+
+    //         return [
+    //             'success' => false,
+    //             'tipo' => 'rejeitada',
+    //             'erro' => 'SEFAZ: ' . $mensagem,
+    //             'codigo_erro' => $this->extrairCodigoErro($mensagem),
+    //             'mensagem' => 'NF-e rejeitada pela SEFAZ'
+    //         ];
+    //     }
+    // }
+
+    
     public function autorizarNFe(string $xmlAssinado): array
     {
         try {
             $idLote = $this->gerarIdLoteValido();
+
             Log::info("📦 Transmitindo NF-e. Lote: {$idLote}");
 
-            // Envia o lote para a SEFAZ
-            $response = $this->tools->sefazEnviaLote([$xmlAssinado], $idLote, 1);
+            // =====================================================
+            // ENVIA O LOTE PARA A SEFAZ
+            // =====================================================
 
-            // Se a SEFAZ respondeu com sucesso, processa normalmente
-            $resultado = $this->processarRespostaAutorizacao($response, $idLote);
+            $response = $this->tools->sefazEnviaLote(
+                [$xmlAssinado],
+                $idLote,
+                1
+            );
 
-            // 🚀 Retorno padrão de sucesso
+            // =====================================================
+            // PROCESSA A RESPOSTA DA SEFAZ
+            // =====================================================
+
+            $resultado = $this->processarRespostaAutorizacao(
+                $response,
+                $idLote
+            );
+
+            // =====================================================
+            // VERIFICA SE A NF-E FOI REALMENTE AUTORIZADA
+            // =====================================================
+
+            if (($resultado['success'] ?? false) === true) {
+
+                Log::info(
+                    '✅ SEFAZ confirmou autorização da NF-e.',
+                    [
+                        'chave_acesso' => $resultado['chave_acesso'] ?? null,
+                        'numero_protocolo' => $resultado['numero_protocolo'] ?? null,
+                    ]
+                );
+
+                // =================================================
+                // MONTA O XML AUTORIZADO / PROTOCOLADO
+                // =================================================
+                //
+                // A SEFAZ retorna o protNFe, mas não devolve
+                // novamente o NFe completo que foi enviado.
+                //
+                // O NFePHP combina:
+                //
+                //   XML assinado enviado
+                //          +
+                //      protNFe SEFAZ
+                //
+                // gerando:
+                //
+                //   <nfeProc>
+                //       <NFe>...</NFe>
+                //       <protNFe>...</protNFe>
+                //   </nfeProc>
+                //
+                // =================================================
+
+                $xmlAutorizado = Complements::toAuthorize(
+                    $xmlAssinado,
+                    $response
+                );
+
+                Log::info(
+                    '💾 XML autorizado/protocolado montado com sucesso.'
+                );
+
+                // =================================================
+                // RETORNO PADRÃO DE SUCESSO
+                // =================================================
+
+                return [
+                    'success' => true,
+                    'tipo' => 'autorizada',
+                    'chave_acesso' => $resultado['chave_acesso'] ?? null,
+                    'numero_protocolo' => $resultado['numero_protocolo'] ?? null,
+                    'xml' => $xmlAutorizado,
+                    'mensagem' => $resultado['mensagem']
+                        ?? 'NF-e autorizada com sucesso'
+                ];
+            }
+
+            // =====================================================
+            // NF-E NÃO AUTORIZADA
+            // =====================================================
+
+            Log::warning(
+                '❌ NF-e não foi autorizada pela SEFAZ.',
+                [
+                    'codigo_erro' => $resultado['codigo_erro'] ?? null,
+                    'erro' => $resultado['erro'] ?? null,
+                ]
+            );
+
             return [
-                'success' => true,
-                'tipo' => 'autorizada',
-                'chave_acesso' => $resultado['chave_acesso'] ?? null,
-                'numero_protocolo' => $resultado['numero_protocolo'] ?? null,
-                'xml' => $resultado['xml'] ?? null,
-                'mensagem' => 'NF-e autorizada com sucesso'
+                'success' => false,
+                'tipo' => $resultado['tipo'] ?? 'rejeitada',
+                'erro' => $resultado['erro'] ?? null,
+                'codigo_erro' => $resultado['codigo_erro'] ?? null,
+                'mensagem' => $resultado['mensagem']
+                    ?? 'NF-e não autorizada pela SEFAZ'
             ];
 
         } catch (\Exception $e) {
+
             $mensagem = $e->getMessage();
 
-            // 🧭 Palavras-chave para detectar erro de comunicação / SEFAZ fora do ar
+            // =====================================================
+            // DETECTA ERROS DE COMUNICAÇÃO / CONTINGÊNCIA
+            // =====================================================
+
             $indicadoresContingencia = [
-                'Could not connect', 'Connection refused', 'SSL',
-                'timeout', 'Could not resolve host',
-                'SEFAZ INDISPONÍVEL', 'Falha de conexão', 'SOAP'
+                'Could not connect',
+                'Connection refused',
+                'SSL',
+                'timeout',
+                'Could not resolve host',
+                'SEFAZ INDISPONÍVEL',
+                'Falha de conexão',
+                'SOAP'
             ];
 
             foreach ($indicadoresContingencia as $palavra) {
+
                 if (stripos($mensagem, $palavra) !== false) {
-                    Log::warning("⚙️ Entrando em contingência automática: {$mensagem}");
+
+                    Log::warning(
+                        "⚙️ Entrando em contingência automática: {$mensagem}"
+                    );
 
                     return [
                         'success' => false,
@@ -71,8 +230,13 @@ class SefaApiService
                 }
             }
 
-            // ❌ Caso contrário, é uma rejeição ou erro de retorno SEFAZ
-            Log::error("❌ Erro ao autorizar NF-e: {$mensagem}");
+            // =====================================================
+            // OUTROS ERROS
+            // =====================================================
+
+            Log::error(
+                "❌ Erro ao autorizar NF-e: {$mensagem}"
+            );
 
             return [
                 'success' => false,

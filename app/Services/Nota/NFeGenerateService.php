@@ -5,6 +5,7 @@ namespace App\Services\Nota;
 use App\Enums\FormaPagamentoEnum;
 use App\Enums\NumeroBandeiraCartaoEnum;
 use App\Models\Venda;
+use Carbon\Carbon;
 use NFePHP\NFe\Tools;
 use NFePHP\Common\Certificate;
 use Illuminate\Support\Facades\Log;
@@ -166,47 +167,114 @@ class NFeGenerateService
         }
     }
 
-    /**
-     * Gera XML da NF-e a partir dos dados da venda
-     */
-    public function gerarXml(Venda $venda): string
-    {
-        $cNF = $this->gerarCodigoNumerico();
-        $chaveAcesso = $this->gerarChaveAcesso($venda, $cNF);
-        $cDV = $this->calcularDigitoVerificador(substr($chaveAcesso, 0, 43));
+    /** * Gera XML da NF-e para uma emissão normal */ 
+    public function gerarXml(Venda $venda): string 
+    { 
+        $cNF = $this->gerarCodigoNumerico(); 
+        $dataEmissao = now(); 
+        $chaveAcesso = $this->gerarChaveAcesso( $venda, $cNF, $dataEmissao ); 
+        $cDV = $this->calcularDigitoVerificador( substr($chaveAcesso, 0, 43) ); 
+        $xml = $this->montarEstruturaXml( $venda, $chaveAcesso, $cDV, $cNF, $dataEmissao ); 
+        file_put_contents( storage_path('logs/xml_nfephp_make.xml'), $xml ); 
+        return $xml; 
+    }
+
+    /** * Gera XML para reconstrução de uma NF-e histórica. 
+     * * * IMPORTANTE: * 
+     * - Mantém número da nota original * 
+     * - Mantém série original * 
+     * - Mantém data/hora original * 
+     * - Utiliza o AAMM da data original na chave * 
+     * - Não cria uma nova numeração fiscal */ 
+    
+    public function gerarXmlHistorico(Venda $venda): string 
+    { 
+        if (!$venda->data_venda) { 
+            throw new \RuntimeException( "A venda {$venda->uuid} não possui data_venda." ); 
+        } if (!$venda->numero_nota_fiscal) { 
+            throw new \RuntimeException( "A venda {$venda->uuid} não possui numero_nota_fiscal." ); 
+        } if (!$venda->serie_nfe) { 
+            throw new \RuntimeException( "A venda {$venda->uuid} não possui serie_nfe." ); 
+        } 
         
-        // Montar XML baseado na estrutura que foi aceita
-        $xml = $this->montarEstruturaXml($venda, $chaveAcesso, $cDV, $cNF);
-
-        file_put_contents(storage_path('logs/xml_nfephp_make.xml'), $xml);
-
-        return $xml;
+        $dataEmissao = $venda->data_venda; 
+        Log::info( "🔄 Reconstruindo NF-e histórica", 
+            [ 
+                'venda_uuid' => $venda->uuid, 
+                'numero_nota' => $venda->numero_nota_fiscal, 
+                'serie' => $venda->serie_nfe, 
+                'data_original' => $dataEmissao->format('Y-m-d H:i:s'), 
+            ] ); 
+            
+        // O cNF pode ser regenerado para a reconstrução. 
+        $cNF = $this->gerarCodigoNumerico(); 
+        
+        /* * IMPORTANTE: * A chave será construída utilizando o AAMM da data 
+        * original da venda. */ 
+        
+        $chaveAcesso = $this->gerarChaveAcesso( $venda, $cNF, $dataEmissao ); 
+        $cDV = $this->calcularDigitoVerificador( substr($chaveAcesso, 0, 43) ); 
+        $xml = $this->montarEstruturaXml( $venda, $chaveAcesso, $cDV, $cNF, $dataEmissao ); 
+        
+        Log::info( "✅ XML histórico reconstruído", 
+            [ 
+                'venda_uuid' => $venda->uuid, 
+                'numero_nota' => $venda->numero_nota_fiscal, 
+                'serie' => $venda->serie_nfe, 
+                'chave' => $chaveAcesso, 
+                'data_emissao' => $dataEmissao->format('Y-m-d H:i:s'), 
+            ] ); 
+            
+        return $xml; 
     }
 
     /**
      * Gera chave de acesso para a NF-e
      */
-    private function gerarChaveAcesso(Venda $venda, string $cNF): string
-    {
-        Log::info("🔍 VERIFICANDO COMPOSIÇÃO DA CHAVE:");
+    // private function gerarChaveAcesso(Venda $venda, string $cNF): string
+    // {
+    //     Log::info("🔍 VERIFICANDO COMPOSIÇÃO DA CHAVE:");
         
-        $campos = [
-            'cUF' => '15',
-            'AAMM' => date('ym'),
-            'CNPJ' => config('nfe.cnpj'),
-            'MOD' => '65',
-            'SERIE' => str_pad($venda->serie_nfe ?? '1', 3, '0', STR_PAD_LEFT),
-            'nNF' => str_pad($venda->numero_nota_fiscal ?? '1', 9, '0', STR_PAD_LEFT),
-            'TPEMIS' => '1',
-            'cNF' => $cNF
-        ];
+    //     $campos = [
+    //         'cUF' => '15',
+    //         'AAMM' => date('ym'),
+    //         'CNPJ' => config('nfe.cnpj'),
+    //         'MOD' => '65',
+    //         'SERIE' => str_pad($venda->serie_nfe ?? '1', 3, '0', STR_PAD_LEFT),
+    //         'nNF' => str_pad($venda->numero_nota_fiscal ?? '1', 9, '0', STR_PAD_LEFT),
+    //         'TPEMIS' => '1',
+    //         'cNF' => $cNF
+    //     ];
     
-        $chaveSemDV = implode('', $campos);
+    //     $chaveSemDV = implode('', $campos);
     
-        // Calcular DV
-        $dv = $this->calcularDigitoVerificador($chaveSemDV);
+    //     // Calcular DV
+    //     $dv = $this->calcularDigitoVerificador($chaveSemDV);
         
-        return $chaveSemDV . $dv;
+    //     return $chaveSemDV . $dv;
+    // }
+
+    /** * Gera chave de acesso para a NF-e */ 
+    private function gerarChaveAcesso( Venda $venda, string $cNF, Carbon $dataEmissao ): string 
+    { 
+        Log::info("🔍 VERIFICANDO COMPOSIÇÃO DA CHAVE:"); 
+        $campos = [ 
+            'cUF' => '15', 
+            'AAMM' => $dataEmissao->format('ym'), 
+            'CNPJ' => config('nfe.cnpj'), 
+            'MOD' => '65', 
+            'SERIE' => str_pad( $venda->serie_nfe, 3, '0', STR_PAD_LEFT ), 
+            'nNF' => str_pad( $venda->numero_nota_fiscal, 9, '0', STR_PAD_LEFT ), 
+            'TPEMIS' => '1', 
+            'cNF' => $cNF, 
+        ]; 
+        
+        $chaveSemDV = implode('', $campos); 
+        $dv = $this->calcularDigitoVerificador($chaveSemDV); 
+        
+        Log::info( "🔑 Chave de acesso gerada", [ 'cUF' => $campos['cUF'], 'AAMM' => $campos['AAMM'], 'CNPJ' => $campos['CNPJ'], 'MOD' => $campos['MOD'], 'SERIE' => $campos['SERIE'], 'nNF' => $campos['nNF'], 'tpEmis' => $campos['TPEMIS'], 'cNF' => $campos['cNF'], 'DV' => $dv, ] ); 
+        
+        return $chaveSemDV . $dv; 
     }
 
     private function proximoNumeroNota()
@@ -252,7 +320,7 @@ class NFeGenerateService
     /**
      * Monta a estrutura completa do XML
      */
-    private function montarEstruturaXml(Venda $venda, string $chaveAcesso, string $cDV, string $cNF): string
+    private function montarEstruturaXml(Venda $venda, string $chaveAcesso, string $cDV, string $cNF, Carbon $dataEmissao): string
     {
         $emitente = $this->getEmitente();
         $destinatario = $this->getDestinatario($venda);
@@ -260,9 +328,11 @@ class NFeGenerateService
         $total = $this->getTotal($venda);
         $pagamento = $this->gerarPagamento($venda);
 
+        $tpAmb = (int) config('nfe.ambiente', 1);
+
         $infCpl = '';
 
-        if ((int) config('nfe.ambiente') === 2) {
+        if ($tpAmb === 2) {
             $infCpl = 'NF-E EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL';
         }
 
@@ -313,14 +383,14 @@ class NFeGenerateService
                     <mod>65</mod>
                     <serie>{$venda->serie_nfe}</serie>
                     <nNF>{$venda->numero_nota_fiscal}</nNF>
-                    <dhEmi>{$this->getDataHoraEmissao()}</dhEmi>
+                    <dhEmi>{$dataEmissao->format('Y-m-d\TH:i:sP')}</dhEmi>
                     <tpNF>1</tpNF>
                     <idDest>1</idDest>
                     <cMunFG>1501402</cMunFG>
                     <tpImp>4</tpImp>
                     <tpEmis>1</tpEmis>
                     <cDV>{$cDV}</cDV>
-                    <tpAmb>1</tpAmb>
+                    <tpAmb>{$tpAmb}</tpAmb>
                     <finNFe>1</finNFe>
                     <indFinal>1</indFinal>
                     <indPres>1</indPres>
@@ -394,14 +464,14 @@ class NFeGenerateService
                     <mod>65</mod>
                     <serie>{$venda->serie_nfe}</serie>
                     <nNF>{$venda->numero_nota_fiscal}</nNF>
-                    <dhEmi>{$this->getDataHoraEmissao()}</dhEmi>
+                    <dhEmi>{$dataEmissao->format('Y-m-d\TH:i:sP')}</dhEmi>
                     <tpNF>1</tpNF>
                     <idDest>1</idDest>
                     <cMunFG>1501402</cMunFG>
                     <tpImp>4</tpImp>
                     <tpEmis>1</tpEmis>
                     <cDV>{$cDV}</cDV>
-                    <tpAmb>1</tpAmb>
+                    <tpAmb>{$tpAmb}</tpAmb>
                     <finNFe>1</finNFe>
                     <indFinal>1</indFinal>
                     <indPres>1</indPres>
@@ -644,8 +714,8 @@ class NFeGenerateService
             $valorDescontos += $vDescItem;
 
             // PIS/COFINS com base no valor líquido
-            $valorPIS += $vLiquido * 0.0165;
-            $valorCOFINS += $vLiquido * 0.0760;
+            $valorPIS += round($vLiquido * 0.0165, 2);
+            $valorCOFINS += round($vLiquido * 0.0760, 2);
         }
 
         // Valor final (vNF) — confiança no campo valor_total da venda (deve ser vProdBruto - descontos + frete/outros)
@@ -658,6 +728,668 @@ class NFeGenerateService
             'valor_cofins' => number_format($valorCOFINS, 2, '.', ''),
             'valor_total' => number_format($valorTotalNota, 2, '.', ''),
         ];
+    }
+
+    // public function reconstruirXmlHistorico(Venda $venda): string
+    // {
+    //     if (empty($venda->xml_nfe)) {
+    //         throw new \RuntimeException(
+    //             "A venda {$venda->uuid} não possui xml_nfe armazenado."
+    //         );
+    //     }
+
+    //     $xmlOriginal = $venda->xml_nfe;
+
+    //     $dom = new \DOMDocument('1.0', 'UTF-8');
+    //     $dom->preserveWhiteSpace = false;
+    //     $dom->formatOutput = true;
+
+    //     libxml_use_internal_errors(true);
+
+    //     if (!$dom->loadXML($xmlOriginal)) {
+    //         $erros = libxml_get_errors();
+    //         libxml_clear_errors();
+
+    //         $mensagens = array_map(
+    //             fn ($erro) => trim($erro->message),
+    //             $erros
+    //         );
+
+    //         throw new \RuntimeException(
+    //             'Não foi possível carregar o XML original: ' .
+    //             implode(' | ', $mensagens)
+    //         );
+    //     }
+
+    //     libxml_clear_errors();
+
+    //     $xpath = new \DOMXPath($dom);
+
+    //     $xpath->registerNamespace(
+    //         'nfe',
+    //         'http://www.portalfiscal.inf.br/nfe'
+    //     );
+
+    //     $xpath->registerNamespace(
+    //         'ds',
+    //         'http://www.w3.org/2000/09/xmldsig#'
+    //     );
+
+    //     /*
+    //     * =========================================================
+    //     * 1. CORRIGIR tpImp
+    //     * =========================================================
+    //     *
+    //     * XML original:
+    //     * <tpImp>1</tpImp>
+    //     *
+    //     * NFC-e modelo 65:
+    //     * <tpImp>4</tpImp>
+    //     */
+    //     $tpImpNodes = $xpath->query('//nfe:infNFe/nfe:ide/nfe:tpImp');
+
+    //     if ($tpImpNodes->length !== 1) {
+    //         throw new \RuntimeException(
+    //             "Não foi possível localizar exatamente uma tag <tpImp>."
+    //         );
+    //     }
+
+    //     $tpImpNodes->item(0)->nodeValue = '4';
+
+    //     /*
+    //     * =========================================================
+    //     * 2. CORRIGIR PAGAMENTO COM CARTÃO
+    //     * =========================================================
+    //     */
+    //     $detPagNodes = $xpath->query('//nfe:infNFe/nfe:pag/nfe:detPag');
+
+    //     foreach ($detPagNodes as $detPag) {
+    //         $tPagNode = $xpath->query('./nfe:tPag', $detPag)->item(0);
+
+    //         if (!$tPagNode) {
+    //             continue;
+    //         }
+
+    //         $tPag = trim($tPagNode->nodeValue);
+
+    //         // 03 = crédito
+    //         // 04 = débito
+    //         if (!in_array($tPag, ['03', '04'], true)) {
+    //             continue;
+    //         }
+
+    //         /*
+    //         * Se o XML já possuir <card>, não adicionamos novamente.
+    //         */
+    //         $cardExistente = $xpath->query('./nfe:card', $detPag);
+
+    //         if ($cardExistente->length > 0) {
+    //             continue;
+    //         }
+
+    //         $dadosCartao = $this->gerarDadosCartao($venda);
+
+    //         $card = $dom->createElementNS(
+    //             'http://www.portalfiscal.inf.br/nfe',
+    //             'card'
+    //         );
+
+    //         $tpIntegra = $dom->createElementNS(
+    //             'http://www.portalfiscal.inf.br/nfe',
+    //             'tpIntegra',
+    //             $dadosCartao['tpIntegra']
+    //         );
+
+    //         $tBand = $dom->createElementNS(
+    //             'http://www.portalfiscal.inf.br/nfe',
+    //             'tBand',
+    //             $dadosCartao['tBand']
+    //         );
+
+    //         $card->appendChild($tpIntegra);
+    //         $card->appendChild($tBand);
+
+    //         $detPag->appendChild($card);
+    //     }
+
+    //     /*
+    //     * =========================================================
+    //     * 3. REMOVER INFORMAÇÕES DE HOMOLOGAÇÃO
+    //     * =========================================================
+    //     *
+    //     * O XML histórico possui:
+    //     *
+    //     * <infAdic>
+    //     *     <infCpl>
+    //     *         NF-e emitida em ambiente de homologacao
+    //     *     </infCpl>
+    //     * </infAdic>
+    //     *
+    //     * Essa informação pertence ao contexto da emissão original
+    //     * e não deve ser carregada para o novo XML.
+    //     */
+    //     $infAdicNodes = $xpath->query('//nfe:infNFe/nfe:infAdic');
+
+    //     foreach ($infAdicNodes as $infAdic) {
+    //         $infAdic->parentNode->removeChild($infAdic);
+    //     }
+
+    //     /*
+    //     * =========================================================
+    //     * 4. REMOVER ASSINATURA ANTIGA
+    //     * =========================================================
+    //     *
+    //     * Qualquer alteração dentro de <infNFe> torna a assinatura
+    //     * original inválida.
+    //     *
+    //     * Nesta primeira etapa NÃO assinaremos novamente.
+    //     */
+    //     $signatureNodes = $xpath->query('//ds:Signature');
+
+    //     foreach ($signatureNodes as $signature) {
+    //         $signature->parentNode->removeChild($signature);
+    //     }
+
+    //     /*
+    //     * =========================================================
+    //     * 5. NÃO ALTERAMOS:
+    //     * =========================================================
+    //     *
+    //     * - Id da infNFe
+    //     * - chave de acesso
+    //     * - cNF
+    //     * - cDV
+    //     * - nNF
+    //     * - série
+    //     * - dhEmi
+    //     * - produtos
+    //     * - impostos
+    //     * - totais
+    //     * - destinatário
+    //     * - emitente
+    //     *
+    //     * Eles permanecem exatamente como estavam no documento
+    //     * histórico.
+    //     */
+
+    //     $xmlReconstruido = $dom->saveXML();
+
+    //     if (!$xmlReconstruido) {
+    //         throw new \RuntimeException(
+    //             "Falha ao serializar o XML reconstruído."
+    //         );
+    //     }
+
+    //     Log::info('XML histórico reconstruído a partir do xml_nfe original.', [
+    //         'venda_id' => $venda->id,
+    //         'venda_uuid' => $venda->uuid,
+    //         'numero_nota' => $venda->numero_nota_fiscal,
+    //         'serie' => $venda->serie_nfe,
+    //     ]);
+
+    //     return $xmlReconstruido;
+    // }
+
+    public function reconstruirXmlParaRegularizacao(Venda $venda): string
+    {
+        if (empty($venda->xml_nfe)) {
+            throw new \RuntimeException(
+                "A venda {$venda->uuid} não possui xml_nfe armazenado."
+            );
+        }
+
+        $xmlOriginal = $venda->xml_nfe;
+
+        $dom = new \DOMDocument('1.0', 'UTF-8');
+        $dom->preserveWhiteSpace = false;
+        $dom->formatOutput = true;
+
+        libxml_use_internal_errors(true);
+
+        if (!$dom->loadXML($xmlOriginal)) {
+            $erros = libxml_get_errors();
+            libxml_clear_errors();
+
+            $mensagens = array_map(
+                fn ($erro) => trim($erro->message),
+                $erros
+            );
+
+            throw new \RuntimeException(
+                'Não foi possível carregar o XML original: ' .
+                implode(' | ', $mensagens)
+            );
+        }
+
+        libxml_clear_errors();
+
+        $xpath = new \DOMXPath($dom);
+
+        $namespaceNFe = 'http://www.portalfiscal.inf.br/nfe';
+
+        $xpath->registerNamespace(
+            'nfe',
+            $namespaceNFe
+        );
+
+        $xpath->registerNamespace(
+            'ds',
+            'http://www.w3.org/2000/09/xmldsig#'
+        );
+
+        /*
+        * =========================================================
+        * 1. CORRIGIR tpImp
+        * =========================================================
+        *
+        * NFC-e modelo 65:
+        *
+        * <tpImp>4</tpImp>
+        */
+        $tpImpNodes = $xpath->query(
+            '//nfe:infNFe/nfe:ide/nfe:tpImp'
+        );
+
+        if ($tpImpNodes->length !== 1) {
+            throw new \RuntimeException(
+                'Não foi possível localizar exatamente uma tag <tpImp>.'
+            );
+        }
+
+        $tpImpNodes->item(0)->nodeValue = '4';
+
+        /*
+        * =========================================================
+        * 2. CORRIGIR PAGAMENTO COM CARTÃO
+        * =========================================================
+        */
+        $detPagNodes = $xpath->query(
+            '//nfe:infNFe/nfe:pag/nfe:detPag'
+        );
+
+        foreach ($detPagNodes as $detPag) {
+
+            $tPagNode = $xpath->query(
+                './nfe:tPag',
+                $detPag
+            )->item(0);
+
+            if (!$tPagNode) {
+                continue;
+            }
+
+            $tPag = trim($tPagNode->nodeValue);
+
+            // 03 = crédito
+            // 04 = débito
+            if (!in_array($tPag, ['03', '04'], true)) {
+                continue;
+            }
+
+            /*
+            * Se o XML já possuir <card>, não adicionamos novamente.
+            */
+            $cardExistente = $xpath->query(
+                './nfe:card',
+                $detPag
+            );
+
+            if ($cardExistente->length > 0) {
+                continue;
+            }
+
+            $dadosCartao = $this->gerarDadosCartao($venda);
+
+            $card = $dom->createElementNS(
+                $namespaceNFe,
+                'card'
+            );
+
+            $tpIntegra = $dom->createElementNS(
+                $namespaceNFe,
+                'tpIntegra',
+                $dadosCartao['tpIntegra']
+            );
+
+            $tBand = $dom->createElementNS(
+                $namespaceNFe,
+                'tBand',
+                $dadosCartao['tBand']
+            );
+
+            $card->appendChild($tpIntegra);
+            $card->appendChild($tBand);
+
+            $detPag->appendChild($card);
+        }
+
+        /*
+        * =========================================================
+        * 3. REMOVER INFORMAÇÕES DE HOMOLOGAÇÃO
+        * =========================================================
+        */
+        $infAdicNodes = $xpath->query(
+            '//nfe:infNFe/nfe:infAdic'
+        );
+
+        foreach ($infAdicNodes as $infAdic) {
+            $infAdic->parentNode->removeChild($infAdic);
+        }
+
+        /*
+        * =========================================================
+        * 4. REMOVER INFORMAÇÕES SUPLEMENTARES ANTIGAS
+        * =========================================================
+        *
+        * O <infNFeSupl> pertence ao XML original e contém,
+        * entre outras informações, o QR Code baseado na chave
+        * de acesso original.
+        *
+        * Como estamos reconstruindo a NFC-e com uma nova chave,
+        * essa estrutura não pode ser reaproveitada.
+        *
+        * Ela será recriada posteriormente pelo fluxo de geração/
+        * assinatura, quando aplicável.
+        */
+        $infNFeSuplNodes = $xpath->query(
+            '//nfe:infNFeSupl'
+        );
+
+        foreach ($infNFeSuplNodes as $infNFeSupl) {
+            $infNFeSupl->parentNode->removeChild($infNFeSupl);
+        }
+
+        /*
+        * =========================================================
+        * 4. REMOVER ASSINATURA ANTIGA
+        * =========================================================
+        *
+        * Qualquer alteração em <infNFe> invalida a assinatura
+        * anterior.
+        */
+        $signatureNodes = $xpath->query(
+            '//ds:Signature'
+        );
+
+        foreach ($signatureNodes as $signature) {
+            $signature->parentNode->removeChild($signature);
+        }
+
+        /*
+        * =========================================================
+        * 5. OBTER DADOS DA NOVA EMISSÃO
+        * =========================================================
+        *
+        * Os dados comerciais permanecem históricos.
+        *
+        * A data de emissão, entretanto, passa a representar
+        * a nova emissão que será realizada agora.
+        */
+        $ideNode = $xpath->query(
+            '//nfe:infNFe/nfe:ide'
+        )->item(0);
+
+        if (!$ideNode) {
+            throw new \RuntimeException(
+                'Não foi possível localizar a tag <ide>.'
+            );
+        }
+
+        /*
+        * ---------------------------------------------------------
+        * Data/hora atual
+        * ---------------------------------------------------------
+        */
+        $dataEmissao = now();
+
+        $dhEmiNodes = $xpath->query(
+            './nfe:dhEmi',
+            $ideNode
+        );
+
+        if ($dhEmiNodes->length !== 1) {
+            throw new \RuntimeException(
+                'Não foi possível localizar exatamente uma tag <dhEmi>.'
+            );
+        }
+
+        $dhEmiNodes->item(0)->nodeValue =
+            $dataEmissao->format('Y-m-d\TH:i:sP');
+
+        /*
+        * =========================================================
+        * 6. OBTER COMPONENTES DA CHAVE
+        * =========================================================
+        *
+        * Mantemos os dados da venda/documento original:
+        *
+        * - cUF
+        * - CNPJ
+        * - modelo
+        * - série
+        * - nNF
+        * - tpEmis
+        * - cNF
+        *
+        * O AAMM será obtido da NOVA data.
+        */
+        $cUF = trim(
+            $xpath->query(
+                './nfe:cUF',
+                $ideNode
+            )->item(0)?->nodeValue ?? ''
+        );
+
+        $modelo = trim(
+            $xpath->query(
+                './nfe:mod',
+                $ideNode
+            )->item(0)?->nodeValue ?? ''
+        );
+
+        $serie = trim(
+            $xpath->query(
+                './nfe:serie',
+                $ideNode
+            )->item(0)?->nodeValue ?? ''
+        );
+
+        $nNF = trim(
+            $xpath->query(
+                './nfe:nNF',
+                $ideNode
+            )->item(0)?->nodeValue ?? ''
+        );
+
+        $tpEmis = trim(
+            $xpath->query(
+                './nfe:tpEmis',
+                $ideNode
+            )->item(0)?->nodeValue ?? ''
+        );
+
+        $cNF = trim(
+            $xpath->query(
+                './nfe:cNF',
+                $ideNode
+            )->item(0)?->nodeValue ?? ''
+        );
+
+        $cnpj = trim(
+            $xpath->query(
+                '//nfe:infNFe/nfe:emit/nfe:CNPJ'
+            )->item(0)?->nodeValue ?? ''
+        );
+
+        /*
+        * =========================================================
+        * 7. VALIDAR COMPONENTES
+        * =========================================================
+        */
+        if (
+            $cUF === '' ||
+            $modelo === '' ||
+            $serie === '' ||
+            $nNF === '' ||
+            $tpEmis === '' ||
+            $cNF === '' ||
+            $cnpj === ''
+        ) {
+            throw new \RuntimeException(
+                'Não foi possível obter todos os componentes necessários para gerar a nova chave de acesso.'
+            );
+        }
+
+        /*
+        * =========================================================
+        * 8. MONTAR BASE DA NOVA CHAVE
+        * =========================================================
+        *
+        * A chave possui:
+        *
+        * cUF + AAMM + CNPJ + mod + série + nNF +
+        * tpEmis + cNF + cDV
+        *
+        * Neste momento ainda temos 43 dígitos.
+        */
+        $aamm = $dataEmissao->format('ym');
+
+        $baseChave =
+            str_pad($cUF, 2, '0', STR_PAD_LEFT) .
+            $aamm .
+            str_pad($cnpj, 14, '0', STR_PAD_LEFT) .
+            str_pad($modelo, 2, '0', STR_PAD_LEFT) .
+            str_pad($serie, 3, '0', STR_PAD_LEFT) .
+            str_pad($nNF, 9, '0', STR_PAD_LEFT) .
+            str_pad($tpEmis, 1, '0', STR_PAD_LEFT) .
+            str_pad($cNF, 8, '0', STR_PAD_LEFT);
+
+        if (!preg_match('/^\d{43}$/', $baseChave)) {
+            throw new \RuntimeException(
+                'A base da nova chave de acesso não possui exatamente 43 dígitos.'
+            );
+        }
+
+        /*
+        * =========================================================
+        * 9. CALCULAR NOVO cDV
+        * =========================================================
+        */
+        $peso = 2;
+        $soma = 0;
+
+        for ($i = strlen($baseChave) - 1; $i >= 0; $i--) {
+
+            $soma += ((int) $baseChave[$i]) * $peso;
+
+            $peso++;
+
+            if ($peso > 9) {
+                $peso = 2;
+            }
+        }
+
+        $resto = $soma % 11;
+        $novoCDV = 11 - $resto;
+
+        if ($novoCDV >= 10) {
+            $novoCDV = 0;
+        }
+
+        $novoCDV = (string) $novoCDV;
+
+        /*
+        * =========================================================
+        * 10. MONTAR NOVA CHAVE COMPLETA
+        * =========================================================
+        */
+        $novaChaveAcesso = $baseChave . $novoCDV;
+
+        if (strlen($novaChaveAcesso) !== 44) {
+            throw new \RuntimeException(
+                'A nova chave de acesso não possui exatamente 44 dígitos.'
+            );
+        }
+
+        /*
+        * =========================================================
+        * 11. ATUALIZAR cDV
+        * =========================================================
+        */
+        $cDVNodes = $xpath->query(
+            './nfe:cDV',
+            $ideNode
+        );
+
+        if ($cDVNodes->length !== 1) {
+            throw new \RuntimeException(
+                'Não foi possível localizar exatamente uma tag <cDV>.'
+            );
+        }
+
+        $cDVNodes->item(0)->nodeValue = $novoCDV;
+
+        /*
+        * =========================================================
+        * 12. ATUALIZAR Id DA infNFe
+        * =========================================================
+        */
+        $infNFeNodes = $xpath->query(
+            '//nfe:infNFe'
+        );
+
+        if ($infNFeNodes->length !== 1) {
+            throw new \RuntimeException(
+                'Não foi possível localizar exatamente uma tag <infNFe>.'
+            );
+        }
+
+        $infNFe = $infNFeNodes->item(0);
+
+        if (!$infNFe instanceof \DOMElement) {
+            throw new \RuntimeException(
+                'O elemento <infNFe> localizado não é um DOMElement válido.'
+            );
+        }
+
+        $infNFe->setAttribute(
+            'Id',
+            'NFe' . $novaChaveAcesso
+        );
+
+        /*
+        * =========================================================
+        * 13. SERIALIZAR XML
+        * =========================================================
+        */
+        $xmlReconstruido = $dom->saveXML();
+
+        if (!$xmlReconstruido) {
+            throw new \RuntimeException(
+                'Falha ao serializar o XML reconstruído para regularização.'
+            );
+        }
+
+        /*
+        * =========================================================
+        * 14. LOG
+        * =========================================================
+        */
+        Log::info(
+            'XML reconstruído para regularização fiscal.',
+            [
+                'venda_id' => $venda->id,
+                'venda_uuid' => $venda->uuid,
+                'numero_nota' => $nNF,
+                'serie' => $serie,
+                'dhEmi' => $dataEmissao->format('Y-m-d\TH:i:sP'),
+                'chave_nova' => $novaChaveAcesso,
+                'cDV_novo' => $novoCDV,
+                'cNF' => $cNF,
+            ]
+        );
+
+        return $xmlReconstruido;
     }
 
     // private function gerarPagamento(Venda $venda)
@@ -768,5 +1500,8 @@ class NFeGenerateService
         return $this->tools->signNFe($xml);
     }
 
-
+    public function assinarXmlHistorico(string $xml): string
+    {
+        return $this->assinarXml($xml);
+    }
 }
