@@ -85,42 +85,7 @@ class VendaItemController extends Controller
             ->with(['produto.fornecedor'])
             ->get();
 
-        // AGRUPAR POR FORNECEDOR
-        // $agrupadoPorFornecedor = $vendaItens
-        // ->groupBy(function ($item) {
-        //     $fornecedor = $item->produto->fornecedor->razao_social ?? null;
-
-        //     // Se estiver vazio, null ou string vazia → agrupa em "Sem fornecedor"
-        //     if (!$fornecedor || trim($fornecedor) === '') {
-        //         return 'Sem fornecedor';
-        //     }
-
-        //     return $fornecedor;
-        // })
-        // ->map(function ($itemsFornecedor) {
-        //     // Agrupa produtos dentro do fornecedor
-        //     $produtos = $itemsFornecedor->groupBy('produto_uuid')->map(function ($itemsProduto) {
-        //         return [
-        //             'produto' => $itemsProduto->first()->produto->nome_titulo ?? 'Produto removido',
-        //             'quantidade_total' => $itemsProduto->sum('quantidade'),
-        //             'subtotal_total' => $itemsProduto->sum(function ($i) {
-        //                 return $i->quantidade * $i->subtotal;
-        //             }),
-        //             'tipo' => $itemsProduto->first()->produto->tipo ?? null,
-        //         ];
-        //     });
-
-        //     return [
-        //         'produtos' => $produtos,
-        //         'quantidade_total_fornecedor' => $itemsFornecedor->sum('quantidade')
-        //     ];
-        // });
-
-        // // Total Geral
-        // $totalGeral = $vendaItens->sum(function ($i) {
-        //     return $i->quantidade * $i->subtotal;
-        // });
-
+        // Agrupar os itens por fornecedor
         $agrupadoPorFornecedor = $vendaItens
             ->groupBy(function ($item) {
                 $fornecedor = $item->produto->fornecedor->razao_social ?? null;
@@ -131,6 +96,7 @@ class VendaItemController extends Controller
             })
             ->map(function ($itemsFornecedor) {
 
+                // Agrupar produtos por produto_uuid e preço unitário
                 $produtos = $itemsFornecedor
                     ->groupBy(function ($item) {
                         return $item->produto_uuid . '_' . $item->preco_unitario;
@@ -140,34 +106,52 @@ class VendaItemController extends Controller
                         $precoUnitario = $itemsProduto->first()->preco_unitario ?? 0;
 
                         return [
-                            'produto' => $itemsProduto->first()->produto->nome_titulo ?? 'Produto removido',
+                            'produto' => $itemsProduto->first()->produto->nome_titulo
+                                ?? 'Produto removido',
+
                             'quantidade_total' => $itemsProduto->sum('quantidade'),
+
                             'preco_unitario' => $precoUnitario,
+
                             'subtotal_total' => $itemsProduto->sum(function ($i) {
                                 return $i->quantidade * $i->preco_unitario;
                             }),
+
                             'tipo' => $itemsProduto->first()->produto->tipo ?? null,
                         ];
                     });
 
-                // ✅ total financeiro do fornecedor
+                // Ordenar os produtos alfabeticamente (A-Z)
+                $produtos = $produtos
+                    ->sort(function ($a, $b) {
+                        return strnatcasecmp($a['produto'], $b['produto']);
+                    })
+                    ->values();
+
+                // Calcular o total financeiro do fornecedor
                 $totalFornecedor = $itemsFornecedor->sum(function ($i) {
                     return $i->quantidade * $i->preco_unitario;
                 });
 
                 return [
                     'produtos' => $produtos,
+
                     'quantidade_total_fornecedor' => $itemsFornecedor->sum('quantidade'),
-                    'total_fornecedor' => $totalFornecedor
+
+                    'total_fornecedor' => $totalFornecedor,
                 ];
             });
 
+        // Ordenar as chaves dos fornecedores alfabeticamente
+        $agrupadoPorFornecedor = $agrupadoPorFornecedor
+            ->sortKeys(SORT_NATURAL | SORT_FLAG_CASE);
 
-        // ✅ total geral corrigido
+        // Calcular o total geral
         $totalGeral = $vendaItens->sum(function ($i) {
             return $i->quantidade * $i->preco_unitario;
         });
 
+        // Gerar o PDF
         $pdf = Pdf::loadView('app.venda.venda-item.pdf', [
             'agrupadoPorFornecedor' => $agrupadoPorFornecedor,
             'data_inicio' => $request->data_inicio,
